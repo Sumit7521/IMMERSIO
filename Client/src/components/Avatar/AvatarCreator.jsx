@@ -1,61 +1,35 @@
-import React, { useEffect, useRef } from "react";
+import React from "react";
+import { AvatarCreator as RPMAvatarCreator } from "@readyplayerme/react-avatar-creator";
 
-const AvatarCreator = ({ onAvatarExport }) => {
-  const iframeRef = useRef(null);
+// Config for direct customization (no popup)
+const config = {
+  clearCache: true,
+  bodyType: "fullbody",  // "halfbody" | "fullbody"
+  quickStart: true,      // direct to customization
+  language: "en",
+};
 
-  useEffect(() => {
-    const iframe = iframeRef.current;
+const style = { width: "100%", height: "100vh", border: "none" };
 
-    const subscribe = (event) => {
-      if (!event.data) return;
-
-      try {
-        const data = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
-
-        if (data.source === "readyplayerme") {
-          // Avatar exported
-          if (data.eventName === "v1.avatar.exported") {
-            const avatarUrl = data.data.url;
-            console.log("✅ Avatar exported:", avatarUrl);
-
-            if (onAvatarExport) onAvatarExport(avatarUrl);
-          }
-
-          // Subscribe to all events
-          if (data.eventName === "v1.frame.ready") {
-            iframe.contentWindow.postMessage(
-              JSON.stringify({
-                target: "readyplayerme",
-                type: "subscribe",
-                eventName: "v1.**",
-              }),
-              "*"
-            );
-          }
-        }
-      } catch (err) {
-        console.error("RPM Event Error:", err);
-      }
-    };
-
-    window.addEventListener("message", subscribe);
-    return () => window.removeEventListener("message", subscribe);
-  }, [onAvatarExport]);
+const AvatarCreator = ({ onAvatarExported }) => {
+  const handleAvatarExported = (event) => {
+    // Safely check event data
+    if (event && event.data && event.data.url) {
+      const url = event.data.url;
+      console.log("🎉 Avatar exported URL:", url);
+      if (onAvatarExported) onAvatarExported(url);
+    } else {
+      console.warn("⚠️ Unexpected AvatarExported event data:", event.data);
+    }
+  };
 
   return (
-    <div style={{ width: "100%", height: "100vh" }}>
-      <iframe
-        ref={iframeRef}
-        title="Ready Player Me Avatar Creator"
-        src={`https://readyplayer.me/avatar?frameApi&clearCache=${Date.now()}`} 
-        style={{
-          width: "100%",
-          height: "100%",
-          border: "none",
-        }}
-        allow="camera *; microphone *"
-      />
-    </div>
+    <RPMAvatarCreator
+      subdomain="sumit-sharma"
+      config={config}
+      style={style}
+      onAvatarExported={handleAvatarExported}
+    />
   );
 };
 

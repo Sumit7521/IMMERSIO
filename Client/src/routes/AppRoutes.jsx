@@ -9,6 +9,7 @@ import NotFound from "../pages/NotFound";
 import RegisterUser from "../pages/RegisterUser";
 import LoginUser from "../pages/LoginUser";
 import Avatar from "../pages/Avatar";
+import Dashboard from "../pages/Dashboard";
 
 const router = createBrowserRouter([
   {
@@ -26,6 +27,10 @@ const router = createBrowserRouter([
   {
     path: '/avatar-custom',
     element: <Avatar />
+  },
+  {
+    path: '/dashboard',
+    element: <Dashboard />
   },
   {
     path: "*",

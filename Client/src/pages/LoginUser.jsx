@@ -25,7 +25,7 @@ const LoginUser = () => {
       });
 
       // Navigate directly to protected route after login
-      navigate('/avatar-custom');
+      navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed');
     }
