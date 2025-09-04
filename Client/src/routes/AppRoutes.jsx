@@ -10,6 +10,7 @@ import RegisterUser from "../pages/RegisterUser";
 import LoginUser from "../pages/LoginUser";
 import Avatar from "../pages/Avatar";
 import Dashboard from "../pages/Dashboard";
+import Metaverse from "../pages/Metaverse"
 
 const router = createBrowserRouter([
   {
@@ -31,6 +32,10 @@ const router = createBrowserRouter([
   {
     path: '/dashboard',
     element: <Dashboard />
+  },
+  {
+    path: '/metaverse',
+    element: <Metaverse />
   },
   {
     path: "*",

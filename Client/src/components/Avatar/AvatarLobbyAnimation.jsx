@@ -1,20 +1,16 @@
-// src/components/AvatarLobbyAnimation.jsx
-import React, { useEffect } from "react";
-import { Canvas } from "@react-three/fiber";
+import React, { useRef, useEffect, useMemo } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, useGLTF, useAnimations } from "@react-three/drei";
 import { SkeletonUtils } from "three-stdlib";
 
+// Avatar Model Component
 const AvatarModel = ({ url, position, rotation, scale }) => {
-  // Load avatar
   const { scene: avatarScene } = useGLTF(url);
+  const { animations } = useGLTF("/animations/M_Standing_Idle_001.glb");
 
-  // Load animation GLB
-  const { animations } = useGLTF("/animations/F_Standing_Idle_Variations_001.glb");
+  // Memoize the cloned avatar to prevent re-cloning on each render
+  const avatarClone = useMemo(() => SkeletonUtils.clone(avatarScene), [avatarScene]);
 
-  // Clone avatar skeleton for animation retargeting
-  const avatarClone = SkeletonUtils.clone(avatarScene);
-
-  // Bind animations to avatar
   const { actions } = useAnimations(animations, avatarClone);
 
   useEffect(() => {
@@ -27,30 +23,63 @@ const AvatarModel = ({ url, position, rotation, scale }) => {
   return <primitive object={avatarClone} position={position} rotation={rotation} scale={scale} />;
 };
 
-const AvatarLobbyAnimation = ({ avatarUrl, posX, posY, posZ, rotX, rotY, rotZ, scale }) => {
-  if (!avatarUrl) return <p className="text-gray-400">No avatar to display</p>;
+// Camera Controller Component
+const CameraController = ({ camX, camY, camZ, camRotX, camRotY, camRotZ, fov }) => {
+  const cameraRef = useRef();
 
-  return (
-    <Canvas camera={{ position: [0, 1.5, 3], fov: 75 }}>
-      <ambientLight intensity={0.7} />
-      <directionalLight position={[0, 5, 5]} intensity={1} />
+  useFrame(() => {
+    if (cameraRef.current) {
+      cameraRef.current.position.set(camX, camY, camZ);
+      cameraRef.current.rotation.set(camRotX, camRotY, camRotZ);
+      cameraRef.current.fov = fov;
+      cameraRef.current.updateProjectionMatrix();
+    }
+  });
 
-      <AvatarModel
-        url={avatarUrl}
-        position={[posX, posY, posZ]}
-        rotation={[rotX, rotY, rotZ]}
-        scale={scale}
-      />
-
-      {/* Orbit controls restricted to Y axis only */}
-      <OrbitControls
-        enableZoom={false}      // ❌ disable zoom
-        enablePan={false}       // ❌ disable panning
-        minPolarAngle={Math.PI / 2} // lock vertical rotation
-        maxPolarAngle={Math.PI / 2} // lock vertical rotation
-      />
-    </Canvas>
-  );
+  return <perspectiveCamera ref={cameraRef} />;
 };
+
+// Main Animation Component
+const AvatarLobbyAnimation = React.memo(
+  ({ avatarUrl, avatarControls, cameraControls, lightControls }) => {
+    return (
+      <Canvas>
+        <ambientLight intensity={0.7} />
+        <directionalLight position={[0, 5, 5]} intensity={1} />
+
+        {/* Lights */}
+        <pointLight
+          position={[lightControls.light1X, lightControls.light1Y, lightControls.light1Z]}
+          color={lightControls.light1Color}
+          intensity={lightControls.light1Intensity}
+        />
+        <pointLight
+          position={[lightControls.light2X, lightControls.light2Y, lightControls.light2Z]}
+          color={lightControls.light2Color}
+          intensity={lightControls.light2Intensity}
+        />
+
+        {/* Avatar */}
+        <AvatarModel
+          url={avatarUrl}
+          position={[avatarControls.posX, avatarControls.posY, avatarControls.posZ]}
+          rotation={[avatarControls.rotX, avatarControls.rotY, avatarControls.rotZ]}
+          scale={avatarControls.scale}
+        />
+
+        {/* Camera */}
+        <CameraController {...cameraControls} />
+
+        {/* Orbit Controls */}
+        <OrbitControls
+          enableZoom={false}
+          enablePan={false}
+          minPolarAngle={Math.PI / 2}
+          maxPolarAngle={Math.PI / 2}
+        />
+      </Canvas>
+    );
+  }
+);
 
 export default AvatarLobbyAnimation;

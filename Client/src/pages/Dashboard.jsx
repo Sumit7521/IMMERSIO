@@ -1,44 +1,29 @@
-// src/pages/Dashboard.jsx
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { useControls } from "leva";
+import { useNavigate } from "react-router";
 import AvatarLobbyAnimation from "../components/Avatar/AvatarLobbyAnimation";
 
+import { fetchAvatars } from "../api/avatar";
+import { fetchProfile } from "../api/profile";
+
 const Dashboard = () => {
-  const [user, setUser] = useState(null);
+  const navigate = useNavigate();
+
   const [avatars, setAvatars] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [profile, setProfile] = useState(null);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const profileRes = await axios.get("http://localhost:3000/api/auth/profile", {
-          withCredentials: true,
-        });
-        setUser(profileRes.data.user);
-
-        const avatarRes = await axios.get("http://localhost:3000/api/avatar/get-avatar", {
-          withCredentials: true,
-        });
-        setAvatars(avatarRes.data.avatars || []);
-      } catch (err) {
-        console.error(err.response?.data || err);
-        setError(err.response?.data?.message || "Failed to fetch data");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+    fetchAvatars().then(setAvatars).catch(console.error);
+    fetchProfile().then(setProfile).catch(console.error);
   }, []);
 
-  const latestAvatarUrl = avatars.length > 0 ? avatars[avatars.length - 1].url : null;
+  const latestAvatarUrl =
+    avatars.length > 0 ? avatars[avatars.length - 1].url : null;
 
-  // 👇 Leva controls
-  const { posX, posY, posZ, rotX, rotY, rotZ, scale } = useControls("Avatar Controls", {
+  // Avatar / Camera / Light controls
+  const avatarControls = useControls("Avatar Controls", {
     posX: { value: 0, min: -5, max: 5, step: 0.1 },
-    posY: { value: -2.1, min: -5, max: 5, step: 0.1 },
+    posY: { value: -2.5, min: -5, max: 5, step: 0.1 },
     posZ: { value: 0, min: -5, max: 5, step: 0.1 },
     rotX: { value: 0, min: -Math.PI, max: Math.PI, step: 0.1 },
     rotY: { value: 0, min: -Math.PI, max: Math.PI, step: 0.1 },
@@ -46,60 +31,64 @@ const Dashboard = () => {
     scale: { value: 2.3, min: 0.1, max: 5, step: 0.1 },
   });
 
+  const cameraControls = useControls("Camera Controls", {
+    camX: { value: 0, min: -10, max: 10, step: 0.1 },
+    camY: { value: 2, min: -10, max: 10, step: 0.1 },
+    camZ: { value: 5, min: -20, max: 20, step: 0.1 },
+    camRotX: { value: 0, min: -Math.PI, max: Math.PI, step: 0.01 },
+    camRotY: { value: 0, min: -Math.PI, max: Math.PI, step: 0.01 },
+    camRotZ: { value: 0, min: -Math.PI, max: Math.PI, step: 0.01 },
+    fov: { value: 50, min: 10, max: 120, step: 1 },
+  });
+
+  const lightControls = useControls("Lights", {
+    light1X: { value: 3, min: -10, max: 10, step: 0.1 },
+    light1Y: { value: -2.8, min: -10, max: 10, step: 0.1 },
+    light1Z: { value: 5.9, min: -10, max: 10, step: 0.1 },
+    light1Color: { value: "#87CEEB" },
+    light1Intensity: { value: 100, min: 0, max: 100, step: 0.1 },
+    light2X: { value: -3, min: -10, max: 10, step: 0.1 },
+    light2Y: { value: 3, min: -10, max: 10, step: 0.1 },
+    light2Z: { value: -3, min: -10, max: 10, step: 0.1 },
+    light2Color: { value: "#FF69B4" },
+    light2Intensity: { value: 80, min: 0, max: 100, step: 0.1 },
+  });
+
   return (
-    <div className="w-full h-screen flex bg-gray-900 text-white">
-      {/* Left panel */}
-      <div className="w-1/3 p-8 border-r border-gray-700 overflow-y-auto">
-        {loading ? (
-          <p className="text-white">Loading...</p>
-        ) : error ? (
-          <p className="text-red-500">{error}</p>
-        ) : (
-          <>
-            <h2 className="text-2xl font-bold mb-4">User Info</h2>
-            <p className="mb-2">
-              <strong>Name:</strong> {user.fullname.firstname} {user.fullname.lastname}
-            </p>
-            <p className="mb-2">
-              <strong>Username:</strong> {user.username}
-            </p>
-            <p className="mb-4">
-              <strong>Email:</strong> {user.email}
-            </p>
-
-            <h3 className="text-xl font-semibold mt-6 mb-2">Your Avatars</h3>
-            {avatars.length > 0 ? (
-              <ul className="space-y-2">
-                {avatars.map((a, idx) => (
-                  <li key={idx} className="bg-gray-800 p-2 rounded">
-                    <span className="truncate block">{a.url}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-gray-400">No avatars created yet.</p>
-            )}
-          </>
-        )}
-      </div>
-
-      {/* Right panel */}
-      <div className="w-2/3 flex items-center justify-center">
-        <div className="w-full h-full bg-gray-800 rounded-lg">
-          {!loading && !error && (
-            <AvatarLobbyAnimation
-              avatarUrl={latestAvatarUrl}
-              posX={posX}
-              posY={posY}
-              posZ={posZ}
-              rotX={rotX}
-              rotY={rotY}
-              rotZ={rotZ}
-              scale={scale}
-            />
-          )}
+    <div
+      className="w-full h-screen flex items-center justify-center bg-cover bg-center relative"
+      style={{ backgroundImage: "url('/images/Lobbyimage.png')" }}
+    >
+      {profile && (
+        <div className="absolute top-5 left-5 p-6 rounded-xl shadow-lg backdrop-blur-lg bg-white/20 border border-white/30 text-white max-w-sm z-10 font-orbitron">
+          <h2 className="text-xl font-bold mb-2">Player Profile</h2>
+          <p className="font-medium">First Name: {profile.fullname.firstname}</p>
+          <p className="font-medium">Last Name: {profile.fullname.lastname}</p>
+          <p className="font-medium">Username: {profile.username}</p>
+          <p className="font-medium">Email: {profile.email}</p>
+          <p className="font-medium">Role: {profile.role}</p>
         </div>
-      </div>
+      )}
+
+      <button className="absolute bottom-5 left-5 px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-lg z-10 font-orbitron font-bold">
+        Logout
+      </button>
+
+      <button
+        onClick={() => navigate("/metaverse")} // ✅ navigate to Metaverse
+        className="absolute bottom-5 right-5 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-lg z-10 font-orbitron font-bold"
+      >
+        Enter Metaverse
+      </button>
+
+      {latestAvatarUrl && (
+        <AvatarLobbyAnimation
+          avatarUrl={latestAvatarUrl}
+          avatarControls={avatarControls}
+          cameraControls={cameraControls}
+          lightControls={lightControls}
+        />
+      )}
     </div>
   );
 };

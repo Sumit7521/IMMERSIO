@@ -1,1 +1,43 @@
-@import "tailwindcss"
+@import "tailwindcss";
+
+/* Declare Orbitron font faces */
+@font-face {
+  font-family: "Orbitron";
+  src: url("/fonts/Orbitron/Orbitron-Regular.ttf") format("truetype");
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: "Orbitron";
+  src: url("/fonts/Orbitron/Orbitron-Medium.ttf") format("truetype");
+  font-weight: 500;
+}
+
+@font-face {
+  font-family: "Orbitron";
+  src: url("/fonts/Orbitron/Orbitron-SemiBold.ttf") format("truetype");
+  font-weight: 600;
+}
+
+@font-face {
+  font-family: "Orbitron";
+  src: url("/fonts/Orbitron/Orbitron-Bold.ttf") format("truetype");
+  font-weight: 700;
+}
+
+@font-face {
+  font-family: "Orbitron";
+  src: url("/fonts/Orbitron/Orbitron-ExtraBold.ttf") format("truetype");
+  font-weight: 800;
+}
+
+@font-face {
+  font-family: "Orbitron";
+  src: url("/fonts/Orbitron/Orbitron-Black.ttf") format("truetype");
+  font-weight: 900;
+}
+
+/* Register Orbitron in Tailwind v4 */
+@theme {
+  --font-orbitron: Orbitron, sans-serif;
+}
