@@ -5,6 +5,9 @@ import AvatarLobbyAnimation from "../components/Avatar/AvatarLobbyAnimation";
 
 import { fetchAvatars } from "../api/avatar";
 import { fetchProfile } from "../api/profile";
+import api from "../config/axios";
+import { logout } from "../lib/slice/authSlice";
+import { useDispatch } from "react-redux";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -19,6 +22,28 @@ const Dashboard = () => {
 
   const latestAvatarUrl =
     avatars.length > 0 ? avatars[avatars.length - 1].url : null;
+const dispatch = useDispatch();
+  const handleLogout = async () => {
+  try {
+    await api.get("/auth/logout");
+    dispatch(logout()); // ✅ clear user state
+    navigate("/");
+  } catch (error) {
+    if (error.response) {
+      console.error("Server error:", error.response.data);
+      alert(error.response.data.message || "Logout failed. Try again.");
+    } else if (error.request) {
+      console.error("Network error:", error.request);
+      alert("Network error. Please check your connection.");
+    } else {
+      console.error("Error:", error.message);
+      alert("Unexpected error during logout.");
+    }
+  }
+};
+
+
+
 
   // Avatar / Camera / Light controls
   const avatarControls = useControls("Avatar Controls", {
@@ -70,7 +95,7 @@ const Dashboard = () => {
         </div>
       )}
 
-      <button className="absolute bottom-5 left-5 px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-lg z-10 font-orbitron font-bold">
+      <button onClick={handleLogout} className="absolute bottom-5 left-5 px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-lg z-10 font-orbitron font-bold">
         Logout
       </button>
 

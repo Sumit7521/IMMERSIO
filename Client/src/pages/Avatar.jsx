@@ -1,8 +1,8 @@
 // src/pages/Avatar.jsx
 import React, { useState } from "react";
 import AvatarCreator from "../components/Avatar/AvatarCreator";
-import axios from "axios";
 import { useNavigate } from "react-router";
+import api from "../config/axios";
 
 const Avatar = () => {
   const [saving, setSaving] = useState(false);
@@ -14,11 +14,7 @@ const Avatar = () => {
     setError("");
 
     try {
-      const res = await axios.post(
-        "http://localhost:3000/api/avatar/save",
-        { url },
-        { withCredentials: true }
-      );
+      const res = await api.post("/avatar/save", { url });
       console.log("✅ Avatar saved:", res.data);
 
       // 👇 Navigate to dashboard after success

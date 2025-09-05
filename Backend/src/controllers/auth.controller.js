@@ -93,4 +93,21 @@ const login = async (req, res) => {
   }
 };
 
-module.exports = { register, login };
+//logout
+function logout(req, res) {
+  const token = req.cookies.token
+  if (!token) {
+    return res.status(400).json({ message: "No token found" })
+  }
+
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: true,     // use true in production with HTTPS
+    sameSite: "strict"
+  })
+
+  return res.status(200).json({ message: "Logged out successfully" })
+}
+
+
+module.exports = { register, login , logout };

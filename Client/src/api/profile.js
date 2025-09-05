@@ -1,10 +1,8 @@
-import axios from "axios";
+import api from "../config/axios";
 
 export const fetchProfile = async () => {
   try {
-    const res = await axios.get("http://localhost:3000/api/auth/profile", {
-      withCredentials: true,
-    });
+    const res = await api.get("/auth/profile")
     return res.data.user;
   } catch (err) {
     throw err.response?.data?.message || "Failed to fetch profile";

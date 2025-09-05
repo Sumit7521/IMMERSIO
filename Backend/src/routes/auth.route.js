@@ -1,5 +1,5 @@
 const express = require("express");
-const { register, login } = require("../controllers/auth.controller");
+const { register, login, logout } = require("../controllers/auth.controller");
 const { authMiddleware, authorizeRoles } = require("../middlewares/auth.middleware");
 
 const router = express.Router();
@@ -23,5 +23,8 @@ router.get("/admin", authMiddleware, authorizeRoles("admin"), (req, res) => {
 router.get("/manage", authMiddleware, authorizeRoles("admin", "manager"), (req, res) => {
   res.json({ message: "Welcome Manager/Admin!" });
 });
+
+//logout
+router.get("/logout", logout )
 
 module.exports = router;

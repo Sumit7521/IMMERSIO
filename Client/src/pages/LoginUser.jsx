@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router';
-import axios from 'axios';
+import api from '../config/axios';
+import { useDispatch } from 'react-redux';
+import { login } from '../lib/slice/authSlice';
 
 const LoginUser = () => {
   const [formData, setFormData] = useState({
@@ -14,22 +16,27 @@ const LoginUser = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
+  const dispatch = useDispatch();
 
-    try {
-      // Backend should set 'token' cookie (httpOnly)
-      await axios.post('http://localhost:3000/api/auth/login', formData, {
-        withCredentials: true
-      });
+const handleLogin = async (e) => {
+  e.preventDefault();
+  setError("");
 
-      // Navigate directly to protected route after login
-      navigate('/dashboard');
-    } catch (err) {
-      setError(err.response?.data?.message || 'Login failed');
+  try {
+    // Backend should set 'token' cookie (httpOnly)
+    const res = await api.post("/auth/login", formData);
+
+    // Dispatch login with returned user
+    if (res.data.user) {
+      dispatch(login(res.data.user));
     }
-  };
+
+    // Navigate directly to protected route
+    navigate("/dashboard");
+  } catch (err) {
+    setError(err.response?.data?.message || "Login failed");
+  }
+};
 
   return (
     <div className="h-screen w-full bg-gradient-to-r from-green-400 to-green-600 flex justify-center items-center px-4">
@@ -38,7 +45,7 @@ const LoginUser = () => {
 
         {error && <p className="text-red-500 mb-4 text-center">{error}</p>}
 
-        <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+        <form className="flex flex-col gap-4" onSubmit={handleLogin}>
           <input
             type="text"
             name="username"

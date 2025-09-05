@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router';
-import axios from 'axios';
+import api from '../config/axios';
+import { useDispatch } from 'react-redux';
+import { login } from '../lib/slice/authSlice';
 
 const RegisterUser = () => {
+  const dispatch = useDispatch();
   const [formData, setFormData] = useState({
     username: '',
     firstName: '',
@@ -18,32 +21,36 @@ const RegisterUser = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
+  e.preventDefault();
+  setError("");
 
-    try {
-      // Correct payload according to backend schema
-      const payload = {
-        username: formData.username,
-        fullname: {
-          firstname: formData.firstName, // lowercase
-          lastname: formData.lastName    // lowercase
-        },
-        email: formData.email,
-        password: formData.password
-      };
+  try {
+    // Correct payload according to backend schema
+    const payload = {
+      username: formData.username,
+      fullname: {
+        firstname: formData.firstName,
+        lastname: formData.lastName,
+      },
+      email: formData.email,
+      password: formData.password,
+    };
 
-      // Send request to backend
-      await axios.post('http://localhost:3000/api/auth/register', payload, {
-        withCredentials: true
-      });
+    // Send request to backend
+    const res = await api.post("/auth/register", payload);
 
-      // Navigate directly to avatar-custom after registration
-      navigate('/avatar-custom');
-    } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed');
+    // Dispatch login after successful register
+    if (res.data.user) {
+      dispatch(login(res.data.user));
     }
-  };
+
+    // Navigate directly to avatar-custom after registration
+    navigate("/avatar-custom");
+  } catch (err) {
+    setError(err.response?.data?.message || "Registration failed");
+  }
+};
+
 
   return (
     <div className="w-full h-screen bg-gradient-to-r from-green-400 to-green-600 flex justify-center items-center px-4">
