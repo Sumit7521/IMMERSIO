@@ -6,7 +6,7 @@ import { SkeletonUtils } from "three-stdlib";
 // Avatar Model Component
 const AvatarModel = ({ url, position, rotation, scale }) => {
   const { scene: avatarScene } = useGLTF(url);
-  const { animations } = useGLTF("/animations/M_Standing_Idle_001.glb");
+  const { animations } = useGLTF("/animations/idle.glb");
 
   // Memoize the cloned avatar to prevent re-cloning on each render
   const avatarClone = useMemo(() => SkeletonUtils.clone(avatarScene), [avatarScene]);

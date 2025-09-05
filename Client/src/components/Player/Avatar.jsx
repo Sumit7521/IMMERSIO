@@ -1,28 +1,54 @@
-// src/components/player/Avatar.jsx
-import React, { useEffect, useState } from "react";
-import { useGLTF } from "@react-three/drei";
+import React, { useEffect, useState, useRef } from "react";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+import { useAnimations } from "@react-three/drei";
+import { SkeletonUtils } from "three-stdlib";
 import { fetchAvatars } from "../../api/avatar";
 
-export default function Avatar({ position = [0, 1, 0], scale = 1 }) {
-  const [avatarUrl, setAvatarUrl] = useState(null);
+export default function Avatar({ currentAction = "idle", scale = 1 }) {
+  const [avatarScene, setAvatarScene] = useState(null);
+  const [animations, setAnimations] = useState([]);
+  const avatarRef = useRef();
 
   useEffect(() => {
-    // Fetch avatars from backend
     fetchAvatars()
-      .then((avatars) => {
-        if (avatars.length > 0) {
-          setAvatarUrl(avatars[0].url); // Take the first avatar
+      .then(async (avatars) => {
+        if (!avatars.length) return;
+
+        const url = avatars[0].url;
+        const loader = new GLTFLoader();
+
+        // Load avatar model
+        const gltf = await loader.loadAsync(url);
+        const clonedScene = SkeletonUtils.clone(gltf.scene);
+        setAvatarScene(clonedScene);
+
+        // Load animations from public folder
+        const animFiles = ["idle.glb", "walk.glb", "run.glb", "jump.glb"];
+        const anims = [];
+
+        for (let file of animFiles) {
+          const animGltf = await loader.loadAsync(`/animations/${file}`);
+          anims.push(...animGltf.animations);
         }
+
+        setAnimations(anims);
       })
-      .catch((err) => {
-        console.error("Error fetching avatar:", err);
-      });
+      .catch(console.error);
   }, []);
 
-  // Wait until URL is fetched
-  if (!avatarUrl) return null;
+  const { actions } = useAnimations(animations, avatarScene);
 
-  const { scene } = useGLTF(avatarUrl);
+  // Switch animations
+  useEffect(() => {
+    if (!actions) return;
 
-  return <primitive object={scene} position={position} scale={scale} />;
+    Object.values(actions).forEach((action) => action.stop());
+    if (actions[currentAction]) {
+      actions[currentAction].reset().fadeIn(0.2).play();
+    }
+  }, [currentAction, actions]);
+
+  if (!avatarScene) return null;
+
+  return <primitive ref={avatarRef} object={avatarScene} scale={scale} />;
 }
