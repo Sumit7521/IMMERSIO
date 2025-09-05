@@ -2,8 +2,8 @@ import { useKeyboardControls } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { RigidBody, CapsuleCollider } from "@react-three/rapier";
 import { useControls } from "leva";
-import { useRef, useState } from "react";
-import { Vector3, Euler } from "three";
+import { useRef, useState, useEffect } from "react";
+import { Vector3 } from "three";
 import { degToRad } from "three/src/math/MathUtils.js";
 import Avatar from "./Avatar";
 
@@ -23,12 +23,13 @@ const lerpAngle = (start, end, t) => {
   return normalizeAngle(start + (end - start) * t);
 };
 
-export const CharacterController = () => {
-  const { WALK_SPEED, RUN_SPEED, ROTATION_SPEED, CAMERA_SMOOTHING } = useControls("Character", {
+export const CharacterController = ({ userId }) => {
+  const { WALK_SPEED, RUN_SPEED, ROTATION_SPEED, CAMERA_SMOOTHING, MOUSE_SENSITIVITY } = useControls("Character", {
     WALK_SPEED: { value: 2.5, min: 0.1, max: 4, step: 0.1 },
     RUN_SPEED: { value: 5.0, min: 0.2, max: 12, step: 0.1 },
     ROTATION_SPEED: { value: degToRad(180), min: degToRad(90), max: degToRad(360), step: degToRad(10) },
-    CAMERA_SMOOTHING: { value: 0.05, min: 0.01, max: 0.2, step: 0.01 }
+    CAMERA_SMOOTHING: { value: 0.1, min: 0.01, max: 0.3, step: 0.01 },
+    MOUSE_SENSITIVITY: { value: 0.002, min: 0.0001, max: 0.01, step: 0.0001 }
   });
 
   const rb = useRef();
@@ -37,8 +38,54 @@ export const CharacterController = () => {
 
   const [animation, setAnimation] = useState("idle");
   const characterRotationTarget = useRef(0);
+  
+  // Mouse camera control
+  const cameraRotationX = useRef(0);
+  const cameraRotationY = useRef(0);
+  const isPointerLocked = useRef(false);
 
   const [, get] = useKeyboardControls();
+
+  // Mouse controls for camera
+  useEffect(() => {
+    const handlePointerLockChange = () => {
+      isPointerLocked.current = document.pointerLockElement !== null;
+    };
+
+    const handleMouseMove = (event) => {
+      if (!isPointerLocked.current) return;
+      
+      cameraRotationY.current -= event.movementX * MOUSE_SENSITIVITY;
+      cameraRotationX.current -= event.movementY * MOUSE_SENSITIVITY;
+      
+      // Clamp vertical rotation
+      cameraRotationX.current = Math.max(-Math.PI / 3, Math.min(Math.PI / 4, cameraRotationX.current));
+    };
+
+    const handleClick = () => {
+      if (!isPointerLocked.current) {
+        document.body.requestPointerLock();
+      }
+    };
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        document.exitPointerLock();
+      }
+    };
+
+    document.addEventListener('pointerlockchange', handlePointerLockChange);
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('click', handleClick);
+    document.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      document.removeEventListener('pointerlockchange', handlePointerLockChange);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('click', handleClick);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [MOUSE_SENSITIVITY]);
 
   useFrame((state, delta) => {
     if (!rb.current || !character.current) return;
@@ -61,7 +108,7 @@ export const CharacterController = () => {
 
     // Get camera right vector
     const cameraRight = new Vector3();
-    cameraRight.crossVectors(cameraDirection, camera.up).normalize();
+    cameraRight.crossVectors(cameraDirection, new Vector3(0, 1, 0)).normalize();
 
     // Calculate movement direction relative to camera
     let moveVector = new Vector3(0, 0, 0);
@@ -113,18 +160,21 @@ export const CharacterController = () => {
     // Apply velocity
     rb.current.setLinvel(vel, true);
 
-    // Smooth camera follow
+    // Mouse controlled camera
     const charPos = rb.current.translation();
-    const characterRotation = new Euler(0, character.current.rotation.y, 0);
     
-    // Camera offset relative to character rotation
-    const cameraOffset = new Vector3(0, 5, -8);
-    cameraOffset.applyEuler(characterRotation);
+    // Calculate camera position based on mouse rotation
+    const distance = 8;
+    const height = 3;
+    
+    const cameraX = Math.sin(cameraRotationY.current) * Math.cos(cameraRotationX.current) * distance;
+    const cameraY = Math.sin(cameraRotationX.current) * distance + height;
+    const cameraZ = Math.cos(cameraRotationY.current) * Math.cos(cameraRotationX.current) * distance;
     
     const targetCameraPos = new Vector3(
-      charPos.x + cameraOffset.x,
-      charPos.y + cameraOffset.y,
-      charPos.z + cameraOffset.z
+      charPos.x + cameraX,
+      charPos.y + cameraY,
+      charPos.z + cameraZ
     );
 
     // Smooth camera movement
