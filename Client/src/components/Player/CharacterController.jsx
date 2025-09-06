@@ -3,7 +3,8 @@ import { useFrame } from "@react-three/fiber";
 import { RigidBody, CapsuleCollider } from "@react-three/rapier";
 import { useControls } from "leva";
 import { useEffect, useRef, useState } from "react";
-import { Vector3 } from "three";
+import * as THREE from 'three'
+import { Vector3, Raycaster } from "three";
 import Avatar from "./Avatar";
 
 const normalizeAngle = (angle) => {
@@ -23,16 +24,20 @@ const lerpAngle = (start, end, t) => {
 };
 
 export const CharacterController = () => {
-  const { WALK_SPEED, RUN_SPEED, ROTATION_SPEED, MOUSE_SENSITIVITY } =
+  const { WALK_SPEED, RUN_SPEED, ROTATION_SPEED, MOUSE_SENSITIVITY, CAMERA_DISTANCE, CAMERA_HEIGHT, CAMERA_COLLISION_RADIUS } =
     useControls("Character", {
-      WALK_SPEED: { value: 2.5, min: 0.1, max: 4, step: 0.1 },
-      RUN_SPEED: { value: 5.0, min: 0.2, max: 12, step: 0.1 },
+      WALK_SPEED: { value: 3.5, min: 0.1, max: 4, step: 0.1 },
+      RUN_SPEED: { value: 8.0, min: 0.2, max: 12, step: 0.1 },
       ROTATION_SPEED: { value: 15, min: 1, max: 30, step: 1 },
-      MOUSE_SENSITIVITY: { value: 0.002, min: 0.0001, max: 0.01, step: 0.0001 }
+      MOUSE_SENSITIVITY: { value: 0.002, min: 0.0001, max: 0.01, step: 0.0001 },
+      CAMERA_DISTANCE: { value: 8, min: 2, max: 20, step: 0.1 },
+      CAMERA_HEIGHT: { value: 3, min: 0.5, max: 10, step: 0.1 },
+      CAMERA_COLLISION_RADIUS: { value: 0.3, min: 0.1, max: 1, step: 0.05 }
     });
 
   const rb = useRef();
   const character = useRef();
+  const raycaster = useRef(new Raycaster());
   const [animation, setAnimation] = useState("idle");
   const [isJumping, setIsJumping] = useState(false);
 
@@ -41,6 +46,9 @@ export const CharacterController = () => {
   const isPointerLocked = useRef(false);
   const [, get] = useKeyboardControls();
   const jumpVelocity = 5;
+
+  const GROUND_EPSILON = 0.15; // tolerance for small bumps
+  const prevJumpPressed = useRef(false); // track previous jump key state
 
   // --- Pointer lock ---
   useEffect(() => {
@@ -67,72 +75,140 @@ export const CharacterController = () => {
     };
   }, [MOUSE_SENSITIVITY]);
 
+  // --- Camera collision detection function ---
+  const getCameraPositionWithCollision = (characterPos, idealCameraPos, scene) => {
+    const direction = new Vector3().subVectors(idealCameraPos, characterPos).normalize();
+    const distance = characterPos.distanceTo(idealCameraPos);
+    
+    // Cast ray from character to ideal camera position
+    raycaster.current.set(characterPos, direction);
+    raycaster.current.far = distance;
+    
+    const intersections = raycaster.current.intersectObjects(scene.children, true);
+    
+    // Filter out the character itself and other non-collision objects
+    const validIntersections = intersections.filter(intersection => {
+      // Skip if it's the character mesh or its children
+      let obj = intersection.object;
+      while (obj) {
+        if (obj === character.current) return false;
+        obj = obj.parent;
+      }
+      // You can add more filters here for objects you don't want camera collision with
+      return true;
+    });
+    
+    if (validIntersections.length > 0) {
+      const closestIntersection = validIntersections[0];
+      const adjustedDistance = Math.max(
+        closestIntersection.distance - CAMERA_COLLISION_RADIUS,
+        1 // Minimum distance to prevent camera from getting too close
+      );
+      
+      // Calculate new camera position
+      const adjustedCameraPos = new Vector3()
+        .copy(characterPos)
+        .add(direction.multiplyScalar(adjustedDistance));
+      
+      return adjustedCameraPos;
+    }
+    
+    return idealCameraPos;
+  };
+
   // --- Movement + Physics ---
-  useFrame((state, delta) => {
-    if (!rb.current || !character.current) return;
+ // --- Camera smoothing ref ---
+const cameraDistanceRef = useRef(CAMERA_DISTANCE);
 
-    const { camera } = state;
-    const vel = { x: 0, y: rb.current.linvel().y, z: 0 };
-    const { forward, backward, left, right, run, jump } = get();
+useFrame((state, delta) => {
+  if (!rb.current || !character.current) return;
 
-    const camDir = new Vector3();
-    camera.getWorldDirection(camDir).setY(0).normalize();
-    const camRight = new Vector3().crossVectors(new Vector3(0, 1, 0), camDir).normalize();
+  const { camera, scene } = state;
+  const vel = { x: 0, y: rb.current.linvel().y, z: 0 };
+  const { forward, backward, left, right, run, jump } = get();
 
-    let moveVector = new Vector3();
-    if (forward) moveVector.add(camDir);
-    if (backward) moveVector.sub(camDir);
-    if (left) moveVector.add(camRight);
-    if (right) moveVector.sub(camRight);
+  const camDir = new Vector3();
+  camera.getWorldDirection(camDir).setY(0).normalize();
+  const camRight = new Vector3().crossVectors(new Vector3(0, 1, 0), camDir).normalize();
 
-    // --- Horizontal movement ---
-    if (moveVector.lengthSq() > 0) {
-      moveVector.normalize();
-      const speed = run ? RUN_SPEED : WALK_SPEED;
-      vel.x = moveVector.x * speed;
-      vel.z = moveVector.z * speed;
-      if (!isJumping) setAnimation(run ? "run" : "walk");
-      const targetRotation = Math.atan2(moveVector.x, moveVector.z);
-      character.current.rotation.y = lerpAngle(character.current.rotation.y, targetRotation, ROTATION_SPEED * delta);
-    } else if (!isJumping) {
-      setAnimation("idle");
-    }
+  let moveVector = new Vector3();
+  if (forward) moveVector.add(camDir);
+  if (backward) moveVector.sub(camDir);
+  if (left) moveVector.add(camRight);
+  if (right) moveVector.sub(camRight);
 
-    // --- Jump logic ---
-    const onGround = Math.abs(rb.current.linvel().y) < 0.01;
-    if (jump && onGround) {
-      vel.y = jumpVelocity;
-      setIsJumping(true);
-      setAnimation("jump");
-    }
+  // --- Horizontal movement ---
+  if (moveVector.lengthSq() > 0) {
+    moveVector.normalize();
+    const speed = run ? RUN_SPEED : WALK_SPEED;
+    vel.x = moveVector.x * speed;
+    vel.z = moveVector.z * speed;
+    if (!isJumping) setAnimation(run ? "run" : "walk");
+    const targetRotation = Math.atan2(moveVector.x, moveVector.z);
+    character.current.rotation.y = lerpAngle(character.current.rotation.y, targetRotation, ROTATION_SPEED * delta);
+  } else if (!isJumping) {
+    setAnimation("idle");
+  }
 
-    // --- Detect landing ---
-    if (isJumping && onGround) {
-      setIsJumping(false);
-      // Return to walk or idle depending on movement keys
-      if (moveVector.lengthSq() > 0) setAnimation(run ? "run" : "walk");
-      else setAnimation("idle");
-    }
+  // --- Jump logic ---
+  const onGround = Math.abs(rb.current.linvel().y) < GROUND_EPSILON;
+  if (jump && !prevJumpPressed.current && onGround) {
+    vel.y = jumpVelocity;
+    setIsJumping(true);
+    setAnimation("jump");
+  }
+  prevJumpPressed.current = jump;
 
-    rb.current.setLinvel(vel, true);
+  if (isJumping && onGround) {
+    setIsJumping(false);
+    if (moveVector.lengthSq() > 0) setAnimation(run ? "run" : "walk");
+    else setAnimation("idle");
+  }
 
-    // --- Sync model to physics ---
-    const pos = rb.current.translation();
-    character.current.position.set(pos.x, pos.y, pos.z);
+  rb.current.setLinvel(vel, true);
 
-    // --- Camera ---
-    const distance = 8, height = 3;
-    const camX = Math.sin(cameraRotationY.current) * Math.cos(cameraRotationX.current) * distance;
-    const camY = Math.sin(cameraRotationX.current) * distance + height;
-    const camZ = Math.cos(cameraRotationY.current) * Math.cos(cameraRotationX.current) * distance;
-    camera.position.copy(new Vector3(pos.x + camX, pos.y + camY, pos.z + camZ));
-    camera.lookAt(pos.x, pos.y + 1.5, pos.z);
-  });
+  // --- Sync model to physics ---
+  const pos = rb.current.translation();
+  character.current.position.set(pos.x, pos.y, pos.z);
+
+  // --- Camera with collision detection ---
+  const characterPosition = new Vector3(pos.x, pos.y + 1.5, pos.z);
+
+  // Direction vector from character to camera
+  const camX = Math.sin(cameraRotationY.current) * Math.cos(cameraRotationX.current);
+  const camY = Math.sin(cameraRotationX.current);
+  const camZ = Math.cos(cameraRotationY.current) * Math.cos(cameraRotationX.current);
+  const camDirVector = new Vector3(camX, camY, camZ).normalize();
+
+  const idealCameraPos = new Vector3().addVectors(
+    characterPosition,
+    camDirVector.clone().multiplyScalar(CAMERA_DISTANCE)
+  );
+
+  const finalCameraPos = getCameraPositionWithCollision(characterPosition, idealCameraPos, scene);
+  const targetDistance = characterPosition.distanceTo(finalCameraPos);
+
+  // --- Smooth distance interpolation only ---
+  cameraDistanceRef.current = THREE.MathUtils.lerp(
+    cameraDistanceRef.current,
+    targetDistance,
+    10 * delta
+  );
+
+  const smoothCameraPos = new Vector3().addVectors(
+    characterPosition,
+    camDirVector.clone().multiplyScalar(cameraDistanceRef.current)
+  );
+
+  camera.position.copy(smoothCameraPos);
+  camera.lookAt(characterPosition);
+});
+
 
   return (
     <>
       <RigidBody colliders={false} lockRotations ref={rb} position={[0, 2, 0]}>
-        <CapsuleCollider args={[0.7, 0.5]} position={[0, 1.2, 0]} />
+        <CapsuleCollider args={[0.7, 0.3]} position={[0, 1, 0]} />
       </RigidBody>
       <group ref={character}>
         <Avatar scale={1} currentAction={animation} />

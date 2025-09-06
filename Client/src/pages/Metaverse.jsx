@@ -80,7 +80,7 @@ export default function Metaverse({ userId }) {
         >
           <ambientLight intensity={0.5} />
           <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
-          <Physics gravity={[0, -9.81, 0]}>
+          <Physics gravity={[0, -9.81, 0]} >
             <CityScene />
             <CharacterController userId={userId} />
           </Physics>
