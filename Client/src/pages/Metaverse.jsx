@@ -4,6 +4,7 @@ import { Physics } from "@react-three/rapier";
 import { KeyboardControls } from "@react-three/drei";
 import CityScene from "../components/world/CityScene";
 import { CharacterController } from "../components/Player/CharacterController";
+import { DynamicSky } from "../components/world/DynamicSky"; // Ensure path is correct
 
 export default function Metaverse({ userId }) {
   const [isPointerLocked, setIsPointerLocked] = useState(false);
@@ -13,16 +14,13 @@ export default function Metaverse({ userId }) {
       setIsPointerLocked(document.pointerLockElement !== null);
     };
 
-    // Prevent default behavior for movement keys
     const handleKeyDown = (event) => {
-      // Prevent default for movement keys and space (jump)
       if (['w', 'a', 's', 'd', 'W', 'A', 'S', 'D'].includes(event.key) || event.code === 'Space') {
         event.preventDefault();
       }
     };
 
     const handleKeyUp = (event) => {
-      // Prevent default for movement keys and space (jump)
       if (['w', 'a', 's', 'd', 'W', 'A', 'S', 'D'].includes(event.key) || event.code === 'Space') {
         event.preventDefault();
       }
@@ -31,7 +29,7 @@ export default function Metaverse({ userId }) {
     document.addEventListener('pointerlockchange', handlePointerLockChange);
     document.addEventListener('keydown', handleKeyDown, true);
     document.addEventListener('keyup', handleKeyUp, true);
-    
+
     return () => {
       document.removeEventListener('pointerlockchange', handlePointerLockChange);
       document.removeEventListener('keydown', handleKeyDown, true);
@@ -68,19 +66,17 @@ export default function Metaverse({ userId }) {
           WASD: Move | Shift: Run | Space: Jump | ESC: Release mouse
         </div>
       )}
-      
+
       <KeyboardControls map={keyMap}>
-        <Canvas 
-          shadows 
+        <Canvas
+          shadows
           camera={{ position: [0, 10, 20], fov: 30 }}
-          onCreated={(state) => {
-            // Ensure canvas can receive focus
-            state.gl.domElement.tabIndex = 1;
-          }}
+          onCreated={(state) => { state.gl.domElement.tabIndex = 1; }}
         >
-          <ambientLight intensity={0.5} />
-          <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
-          <Physics gravity={[0, -9.81, 0]} >
+          {/* Dynamic sky, lighting, and fog */}
+          <DynamicSky useCustomHDRI={true} />
+
+          <Physics gravity={[0, -9.81, 0]}>
             <CityScene />
             <CharacterController userId={userId} />
           </Physics>

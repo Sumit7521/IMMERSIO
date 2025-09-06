@@ -2,6 +2,7 @@
 import React from "react"
 import { useGLTF } from "@react-three/drei"
 import { RigidBody } from "@react-three/rapier"
+import { DynamicSky } from './DynamicSky';
 
 export default function CityScene() {
   // Load the city model from public folder
