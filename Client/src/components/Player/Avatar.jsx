@@ -4,7 +4,6 @@ import { useAnimations } from "@react-three/drei";
 import { SkeletonUtils } from "three-stdlib";
 import * as THREE from "three";
 import { fetchAvatars } from "../../api/avatar";
-// import { useFrame } from "@react-three/fiber";
 
 const ROOT_LIKELY = new Set([
   "Hips", "mixamorigHips", "Root", "Armature", "ArmatureRoot", "root", "hip", "hips"

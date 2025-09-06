@@ -34,12 +34,12 @@ export const CharacterController = () => {
   const rb = useRef();
   const character = useRef();
   const [animation, setAnimation] = useState("idle");
+  const [isJumping, setIsJumping] = useState(false);
 
   const cameraRotationX = useRef(0);
   const cameraRotationY = useRef(0);
   const isPointerLocked = useRef(false);
   const [, get] = useKeyboardControls();
-
   const jumpVelocity = 5;
 
   // --- Pointer lock ---
@@ -85,23 +85,33 @@ export const CharacterController = () => {
     if (left) moveVector.add(camRight);
     if (right) moveVector.sub(camRight);
 
+    // --- Horizontal movement ---
     if (moveVector.lengthSq() > 0) {
       moveVector.normalize();
       const speed = run ? RUN_SPEED : WALK_SPEED;
       vel.x = moveVector.x * speed;
       vel.z = moveVector.z * speed;
-      setAnimation(run ? "run" : "walk");
-
+      if (!isJumping) setAnimation(run ? "run" : "walk");
       const targetRotation = Math.atan2(moveVector.x, moveVector.z);
       character.current.rotation.y = lerpAngle(character.current.rotation.y, targetRotation, ROTATION_SPEED * delta);
-    } else {
+    } else if (!isJumping) {
       setAnimation("idle");
     }
 
-    // --- Jump ---
-    if (jump && Math.abs(rb.current.linvel().y) < 0.01) {
+    // --- Jump logic ---
+    const onGround = Math.abs(rb.current.linvel().y) < 0.01;
+    if (jump && onGround) {
       vel.y = jumpVelocity;
+      setIsJumping(true);
       setAnimation("jump");
+    }
+
+    // --- Detect landing ---
+    if (isJumping && onGround) {
+      setIsJumping(false);
+      // Return to walk or idle depending on movement keys
+      if (moveVector.lengthSq() > 0) setAnimation(run ? "run" : "walk");
+      else setAnimation("idle");
     }
 
     rb.current.setLinvel(vel, true);
