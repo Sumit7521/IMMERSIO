@@ -1,14 +1,11 @@
-// src/components/player/Avatar.jsx
-
 import React, { useEffect, useRef, useState } from "react";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { useAnimations } from "@react-three/drei";
 import { SkeletonUtils } from "three-stdlib";
 import * as THREE from "three";
 import { fetchAvatars } from "../../api/avatar";
-import { useFrame } from "@react-three/fiber"; // ADDED: Import useFrame
+// import { useFrame } from "@react-three/fiber";
 
-// ... (stripRootMotion function remains the same) ...
 const ROOT_LIKELY = new Set([
   "Hips", "mixamorigHips", "Root", "Armature", "ArmatureRoot", "root", "hip", "hips"
 ]);
@@ -26,9 +23,13 @@ function stripRootMotion(clip, scene) {
     if (prop === "position" && nodeName && names.has(nodeName)) return false;
     return true;
   });
-  return new THREE.AnimationClip(clip.name, clip.duration || undefined, filteredTracks.length ? filteredTracks : clip.tracks);
-}
 
+  return new THREE.AnimationClip(
+    clip.name,
+    clip.duration || undefined,
+    filteredTracks.length ? filteredTracks : clip.tracks
+  );
+}
 
 export default function Avatar({ currentAction = "idle", scale = 1 }) {
   const [avatarScene, setAvatarScene] = useState(null);
@@ -37,7 +38,6 @@ export default function Avatar({ currentAction = "idle", scale = 1 }) {
   const groupRef = useRef();
   const prevActionName = useRef(null);
 
-  // ... (useEffect for loading remains the same) ...
   useEffect(() => {
     let alive = true;
 
@@ -48,7 +48,6 @@ export default function Avatar({ currentAction = "idle", scale = 1 }) {
         if (!alive || !avatars?.length) return;
 
         const loader = new GLTFLoader();
-
         const base = await loader.loadAsync(avatars[0].url);
         if (!alive) return;
         const sceneClone = SkeletonUtils.clone(base.scene);
@@ -70,7 +69,6 @@ export default function Avatar({ currentAction = "idle", scale = 1 }) {
         }
 
         const sanitized = loadedClips.map((c) => stripRootMotion(c, sceneClone));
-
         if (!alive) return;
         setAvatarScene(sceneClone);
         setClips(sanitized);
@@ -81,50 +79,31 @@ export default function Avatar({ currentAction = "idle", scale = 1 }) {
       }
     })();
 
-    return () => {
-      alive = false;
-    };
+    return () => { alive = false; };
   }, []);
-
 
   const { actions } = useAnimations(clips, avatarScene);
 
-  // ... (useEffect for crossfade remains the same) ...
   useEffect(() => {
     if (!actions || !actions[currentAction]) return;
 
     const next = actions[currentAction];
     const prev = prevActionName.current ? actions[prevActionName.current] : null;
 
-    next.reset().setLoop(THREE.LoopRepeat, Infinity).fadeIn(0.2).play();
+    next.reset().fadeIn(0.2).play();
     if (prev && prev !== next) prev.fadeOut(0.2);
-    
+
     prevActionName.current = currentAction;
 
+    if (currentAction === "jump") {
+      next.clampWhenFinished = true;
+      next.setLoop(THREE.LoopOnce);
+    } else {
+      next.setLoop(THREE.LoopRepeat, Infinity);
+    }
   }, [actions, currentAction]);
 
-  // CHANGED: Replaced useMemo with useFrame for the side-effect
-  // This is a "belt and suspenders" approach to ensure root motion is cancelled.
-  // It forcibly resets the root bone's horizontal position every frame.
-  useFrame(() => {
-    if (!avatarScene) return;
-    avatarScene.traverse((o) => {
-      // Find the root bone (a bone without a bone parent)
-      if (o.isBone && (!o.parent || !o.parent.isBone)) {
-        // lock root bone local position on x and z axes
-        o.position.set(0, o.position.y, 0);
-      }
-    });
-  });
-
-  if (isLoading) {
-    return (
-      <mesh>
-        <boxGeometry args={[1, 2, 1]} />
-        <meshStandardMaterial color="gray" wireframe />
-      </mesh>
-    );
-  }
+  if (isLoading) return <mesh><boxGeometry args={[1, 2, 1]} /><meshStandardMaterial color="gray" wireframe /></mesh>;
   if (!avatarScene) return null;
 
   return (
