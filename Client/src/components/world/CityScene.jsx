@@ -5,7 +5,7 @@ import { RigidBody } from "@react-three/rapier"
 
 export default function CityScene() {
   // Load the city model from public folder
-  const { scene } = useGLTF("/models/City.glb")
+  const { scene } = useGLTF("/models/fullcity.glb")
 
   return (
     <RigidBody type="fixed" colliders='trimesh'>

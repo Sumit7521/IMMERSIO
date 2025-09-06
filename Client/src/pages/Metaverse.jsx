@@ -3,7 +3,7 @@ import { Canvas } from "@react-three/fiber";
 import { Physics } from "@react-three/rapier";
 import { KeyboardControls } from "@react-three/drei";
 import CityScene from "../components/world/CityScene";
-import { CharacterController } from "../components/player/CharacterController";
+import { CharacterController } from "../components/Player/CharacterController";
 
 export default function Metaverse({ userId }) {
   const [isPointerLocked, setIsPointerLocked] = useState(false);
@@ -13,11 +13,40 @@ export default function Metaverse({ userId }) {
       setIsPointerLocked(document.pointerLockElement !== null);
     };
 
+    // Prevent default behavior for movement keys
+    const handleKeyDown = (event) => {
+      // Prevent default for movement keys and space (jump)
+      if (['w', 'a', 's', 'd', 'W', 'A', 'S', 'D'].includes(event.key) || event.code === 'Space') {
+        event.preventDefault();
+      }
+    };
+
+    const handleKeyUp = (event) => {
+      // Prevent default for movement keys and space (jump)
+      if (['w', 'a', 's', 'd', 'W', 'A', 'S', 'D'].includes(event.key) || event.code === 'Space') {
+        event.preventDefault();
+      }
+    };
+
     document.addEventListener('pointerlockchange', handlePointerLockChange);
+    document.addEventListener('keydown', handleKeyDown, true);
+    document.addEventListener('keyup', handleKeyUp, true);
+    
     return () => {
       document.removeEventListener('pointerlockchange', handlePointerLockChange);
+      document.removeEventListener('keydown', handleKeyDown, true);
+      document.removeEventListener('keyup', handleKeyUp, true);
     };
   }, []);
+
+  const keyMap = [
+    { name: "forward", keys: ["KeyW", "ArrowUp"] },
+    { name: "backward", keys: ["KeyS", "ArrowDown"] },
+    { name: "left", keys: ["KeyA", "ArrowLeft"] },
+    { name: "right", keys: ["KeyD", "ArrowRight"] },
+    { name: "run", keys: ["ShiftLeft", "ShiftRight"] },
+    { name: "jump", keys: ["Space"] },
+  ];
 
   return (
     <div style={{ width: "100vw", height: "100vh", position: "relative" }}>
@@ -36,25 +65,23 @@ export default function Metaverse({ userId }) {
         }}>
           Click to enable mouse look
           <br />
-          WASD: Move | Shift: Run | ESC: Release mouse
+          WASD: Move | Shift: Run | Space: Jump | ESC: Release mouse
         </div>
       )}
       
-      <KeyboardControls
-        map={[
-          { name: "forward", keys: ["w", "ArrowUp"] },
-          { name: "backward", keys: ["s", "ArrowDown"] },
-          { name: "left", keys: ["a", "ArrowLeft"] },
-          { name: "right", keys: ["d", "ArrowRight"] },
-          { name: "run", keys: ["Shift"] },
-          { name: "jump", keys: [" "] },
-        ]}
-      >
-        <Canvas shadows camera={{ position: [0, 10, 20], fov: 30 }}>
+      <KeyboardControls map={keyMap}>
+        <Canvas 
+          shadows 
+          camera={{ position: [0, 10, 20], fov: 30 }}
+          onCreated={(state) => {
+            // Ensure canvas can receive focus
+            state.gl.domElement.tabIndex = 1;
+          }}
+        >
           <ambientLight intensity={0.5} />
           <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
-          <Physics gravity={[0, -9.81, 0]} >
-            <CityScene  />
+          <Physics gravity={[0, -9.81, 0]}>
+            <CityScene />
             <CharacterController userId={userId} />
           </Physics>
         </Canvas>
