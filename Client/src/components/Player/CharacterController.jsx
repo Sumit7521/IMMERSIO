@@ -1,5 +1,5 @@
-// components/Player/CharacterController.js (Updated with multiplayer)
-import React, { useRef } from "react";
+// components/Player/CharacterController.js
+import React, { useRef, useEffect, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import { RigidBody, CapsuleCollider } from "@react-three/rapier";
 import { useKeyboardControls } from "@react-three/drei";
@@ -14,6 +14,9 @@ import { useCameraCollision } from "../../hooks/useCameraCollision";
 import { useCharacterAnimation } from "../../hooks/useCharacterAnimation";
 import { useMultiplayer } from "../../hooks/useMultiplayer";
 import { lerpAngle } from "../../hooks/utils";
+
+// ✅ Import the Avatar context
+import { useAvatar } from "../../contexts/AvatarContext";
 
 export const CharacterController = ({ userId = 'guest' }) => {
   const { WALK_SPEED, RUN_SPEED, ROTATION_SPEED, MOUSE_SENSITIVITY, CAMERA_DISTANCE, CAMERA_COLLISION_RADIUS } =
@@ -36,14 +39,22 @@ export const CharacterController = ({ userId = 'guest' }) => {
   const { getCameraPositionWithCollision, smoothCameraPosition } = useCameraCollision(character, CAMERA_DISTANCE, CAMERA_COLLISION_RADIUS);
   const { animation, setAnimation, isJumping, setIsJumping } = useCharacterAnimation();
   
-  // Multiplayer hook - only connects if backend is available
-  const { players, connected, sendPlayerUpdate, sessionId } = useMultiplayer(userId, 'default');
+  // ✅ Get avatar URL from context
+  const { avatarUrl } = useAvatar();
+  const [multiplayerReady, setMultiplayerReady] = useState(false);
+
+  // ✅ Multiplayer hook now receives actual avatarUrl
+  const { players, connected, sendPlayerUpdate, sessionId } = useMultiplayer(userId, avatarUrl || 'default');
 
   const jumpVelocity = 5;
   const prevJumpPressed = useRef(false);
 
+  useEffect(() => {
+    if (avatarUrl) setMultiplayerReady(true);
+  }, [avatarUrl]);
+
   useFrame((state, delta) => {
-    if (!rb.current || !character.current) return;
+    if (!rb.current || !character.current || !multiplayerReady) return;
 
     const { camera, scene } = state;
     const vel = { x: 0, y: rb.current.linvel().y, z: 0 };
@@ -92,13 +103,14 @@ export const CharacterController = ({ userId = 'guest' }) => {
     const pos = rb.current.translation();
     character.current.position.set(pos.x, pos.y, pos.z);
 
-    // Send multiplayer updates (throttled to 20 FPS) - only if connected
+    // Multiplayer updates (throttled)
     updateThrottleRef.current += delta;
     if (updateThrottleRef.current >= 1/20 && connected) {
-      sendPlayerUpdate(pos.x, pos.y, pos.z, character.current.rotation.y, animation);
+      sendPlayerUpdate(pos.x, pos.y, pos.z, character.current.rotation.y, animation, avatarUrl);
       updateThrottleRef.current = 0;
     }
 
+    // Camera
     const characterPosition = new Vector3(pos.x, pos.y + 1.5, pos.z);
     const camX = Math.sin(cameraRotationY.current) * Math.cos(cameraRotationX.current);
     const camY = Math.sin(cameraRotationX.current);
@@ -122,13 +134,19 @@ export const CharacterController = ({ userId = 'guest' }) => {
         <CapsuleCollider args={[0.7, 0.3]} position={[0, 1, 0]} />
       </RigidBody>
       <group ref={character}>
-        <Avatar scale={1} currentAction={animation} />
+        <Avatar scale={1} currentAction={animation} avatarUrl={avatarUrl} />
       </group>
 
-      {/* Remote players - only render if multiplayer is connected */}
+      {/* Remote players */}
       {connected && Array.from(players.values()).map(player => {
         if (player.sessionId === sessionId) return null; // Skip own player
-        return <RemotePlayer key={player.sessionId} player={player} />;
+        return (
+          <RemotePlayer 
+            key={player.sessionId} 
+            player={player} 
+            avatarUrl={player.avatarUrl} // ✅ remote avatar
+          />
+        );
       })}
     </>
   );

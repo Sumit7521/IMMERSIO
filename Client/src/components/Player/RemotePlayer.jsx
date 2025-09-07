@@ -1,4 +1,3 @@
-// components/Player/RemotePlayer.js
 import React, { useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import Avatar from './Avatar';
@@ -32,7 +31,12 @@ const RemotePlayer = ({ player }) => {
 
   return (
     <group ref={groupRef}>
-      <Avatar scale={1} currentAction={player.animation} />
+      <Avatar 
+        scale={1} 
+        currentAction={player.animation} 
+        avatarUrl={player.avatarUrl} // ✅ remote avatar URL
+      />
+
       {/* Optional: Add username display above player */}
       <mesh position={[0, 3, 0]}>
         <planeGeometry args={[2, 0.5]} />

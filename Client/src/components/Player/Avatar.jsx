@@ -3,7 +3,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { useAnimations } from "@react-three/drei";
 import { SkeletonUtils } from "three-stdlib";
 import * as THREE from "three";
-import { fetchAvatars } from "../../api/avatar";
+import { useAvatar } from "../../contexts/AvatarContext";
 
 const ROOT_LIKELY = new Set([
   "Hips", "mixamorigHips", "Root", "Armature", "ArmatureRoot", "root", "hip", "hips"
@@ -30,7 +30,10 @@ function stripRootMotion(clip, scene) {
   );
 }
 
-export default function Avatar({ currentAction = "idle", scale = 1 }) {
+export default function Avatar({ avatarUrl: propUrl, currentAction = "idle", scale = 1 }) {
+  const context = useAvatar();
+  const avatarUrl = propUrl || context.avatarUrl; // Remote prop overrides context
+
   const [avatarScene, setAvatarScene] = useState(null);
   const [clips, setClips] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -38,28 +41,28 @@ export default function Avatar({ currentAction = "idle", scale = 1 }) {
   const prevActionName = useRef(null);
 
   useEffect(() => {
+    if (!avatarUrl) return;
+
     let alive = true;
 
     (async () => {
       try {
         setIsLoading(true);
-        const avatars = await fetchAvatars();
-        if (!alive || !avatars?.length) return;
 
         const loader = new GLTFLoader();
-        const base = await loader.loadAsync(avatars[0].url);
+        const base = await loader.loadAsync(avatarUrl);
         if (!alive) return;
         const sceneClone = SkeletonUtils.clone(base.scene);
 
-        const files = ["idle.glb", "walk.glb", "run.glb", "jump.glb"];
+        const animFiles = ["idle.glb", "walk.glb", "run.glb", "jump.glb"];
         const loadedClips = [];
-        for (const file of files) {
+
+        for (const file of animFiles) {
           try {
             const anim = await loader.loadAsync(`/animations/${file}`);
-            (anim.animations || []).forEach((c) => {
-              const name = file.replace(".glb", "");
-              const cloned = c.clone();
-              cloned.name = name;
+            (anim.animations || []).forEach((clip) => {
+              const cloned = clip.clone();
+              cloned.name = file.replace(".glb", "");
               loadedClips.push(cloned);
             });
           } catch (e) {
@@ -67,8 +70,9 @@ export default function Avatar({ currentAction = "idle", scale = 1 }) {
           }
         }
 
-        const sanitized = loadedClips.map((c) => stripRootMotion(c, sceneClone));
+        const sanitized = loadedClips.map((clip) => stripRootMotion(clip, sceneClone));
         if (!alive) return;
+
         setAvatarScene(sceneClone);
         setClips(sanitized);
       } catch (e) {
@@ -79,7 +83,7 @@ export default function Avatar({ currentAction = "idle", scale = 1 }) {
     })();
 
     return () => { alive = false; };
-  }, []);
+  }, [avatarUrl]);
 
   const { actions } = useAnimations(clips, avatarScene);
 
@@ -102,7 +106,13 @@ export default function Avatar({ currentAction = "idle", scale = 1 }) {
     }
   }, [actions, currentAction]);
 
-  if (isLoading) return <mesh><boxGeometry args={[1, 2, 1]} /><meshStandardMaterial color="gray" wireframe /></mesh>;
+  if (isLoading) return (
+    <mesh>
+      <boxGeometry args={[1, 2, 1]} />
+      <meshStandardMaterial color="gray" wireframe />
+    </mesh>
+  );
+
   if (!avatarScene) return null;
 
   return (
