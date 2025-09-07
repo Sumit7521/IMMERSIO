@@ -20,7 +20,9 @@
     "@tailwindcss/vite": "^4.1.12",
     "@types/three": "^0.179.0",
     "axios": "^1.11.0",
+    "colyseus.js": "^0.16.19",
     "leva": "^0.10.0",
+    "r3f-perf": "^7.2.3",
     "react": "19.0",
     "react-dom": "19.0",
     "react-redux": "^9.2.0",
@@ -28,8 +30,7 @@
     "tailwindcss": "^4.1.12",
     "three": "^0.174.0",
     "three-stdlib": "^2.36.0",
-    "util": "^0.12.5",
-    "r3f-perf": "^7.2.3"
+    "util": "^0.12.5"
   },
   "devDependencies": {
     "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
