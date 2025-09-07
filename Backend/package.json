@@ -11,7 +11,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@colyseus/monitor": "^0.16.7",
     "@colyseus/schema": "^3.0.60",
+    "@colyseus/ws-transport": "^0.16.5",
     "bcryptjs": "^3.0.2",
     "colyseus": "^0.16.4",
     "cookie-parser": "^1.4.7",

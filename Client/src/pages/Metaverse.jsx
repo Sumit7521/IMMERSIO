@@ -1,11 +1,12 @@
+// Metaverse.js (Updated)
 import React, { useState, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Physics } from "@react-three/rapier";
 import { KeyboardControls } from "@react-three/drei";
 import CityScene from "../components/world/CityScene";
 import { CharacterController } from "../components/Player/CharacterController";
-import { DynamicSky } from "../components/world/DynamicSky"; // Ensure path is correct
-import { Rain } from "../components/world/Rain";
+import { DynamicSky } from "../components/world/DynamicSky";
+// import { Rain } from "../components/world/Rain"; // Commented out as in your original
 
 export default function Metaverse({ userId }) {
   const [isPointerLocked, setIsPointerLocked] = useState(false);
@@ -65,6 +66,8 @@ export default function Metaverse({ userId }) {
           Click to enable mouse look
           <br />
           WASD: Move | Shift: Run | Space: Jump | ESC: Release mouse
+          <br />
+          🌐 Multiplayer Ready
         </div>
       )}
 

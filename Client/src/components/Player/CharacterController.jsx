@@ -1,3 +1,4 @@
+// components/Player/CharacterController.js (Updated with multiplayer)
 import React, { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { RigidBody, CapsuleCollider } from "@react-three/rapier";
@@ -5,14 +6,16 @@ import { useKeyboardControls } from "@react-three/drei";
 import { useControls } from "leva";
 import { Vector3 } from "three";
 import Avatar from "./Avatar";
+import RemotePlayer from "./RemotePlayer";
 
 import { usePointerLock } from "../../hooks/usePointerLock";
 import { useGroundDetection } from "../../hooks/useGroundDetection";
 import { useCameraCollision } from "../../hooks/useCameraCollision";
 import { useCharacterAnimation } from "../../hooks/useCharacterAnimation";
+import { useMultiplayer } from "../../hooks/useMultiplayer";
 import { lerpAngle } from "../../hooks/utils";
 
-export const CharacterController = () => {
+export const CharacterController = ({ userId = 'guest' }) => {
   const { WALK_SPEED, RUN_SPEED, ROTATION_SPEED, MOUSE_SENSITIVITY, CAMERA_DISTANCE, CAMERA_COLLISION_RADIUS } =
     useControls("Character", {
       WALK_SPEED: { value: 3.5, min: 0.1, max: 4, step: 0.1 },
@@ -26,11 +29,15 @@ export const CharacterController = () => {
   const rb = useRef();
   const character = useRef();
   const [, get] = useKeyboardControls();
+  const updateThrottleRef = useRef(0);
 
   const { cameraRotationX, cameraRotationY } = usePointerLock(MOUSE_SENSITIVITY);
   const { checkGrounded } = useGroundDetection(character);
   const { getCameraPositionWithCollision, smoothCameraPosition } = useCameraCollision(character, CAMERA_DISTANCE, CAMERA_COLLISION_RADIUS);
   const { animation, setAnimation, isJumping, setIsJumping } = useCharacterAnimation();
+  
+  // Multiplayer hook - only connects if backend is available
+  const { players, connected, sendPlayerUpdate, sessionId } = useMultiplayer(userId, 'default');
 
   const jumpVelocity = 5;
   const prevJumpPressed = useRef(false);
@@ -85,6 +92,13 @@ export const CharacterController = () => {
     const pos = rb.current.translation();
     character.current.position.set(pos.x, pos.y, pos.z);
 
+    // Send multiplayer updates (throttled to 20 FPS) - only if connected
+    updateThrottleRef.current += delta;
+    if (updateThrottleRef.current >= 1/20 && connected) {
+      sendPlayerUpdate(pos.x, pos.y, pos.z, character.current.rotation.y, animation);
+      updateThrottleRef.current = 0;
+    }
+
     const characterPosition = new Vector3(pos.x, pos.y + 1.5, pos.z);
     const camX = Math.sin(cameraRotationY.current) * Math.cos(cameraRotationX.current);
     const camY = Math.sin(cameraRotationX.current);
@@ -103,12 +117,19 @@ export const CharacterController = () => {
 
   return (
     <>
+      {/* Local player */}
       <RigidBody colliders={false} lockRotations ref={rb} position={[0, 2, 0]}>
         <CapsuleCollider args={[0.7, 0.3]} position={[0, 1, 0]} />
       </RigidBody>
       <group ref={character}>
         <Avatar scale={1} currentAction={animation} />
       </group>
+
+      {/* Remote players - only render if multiplayer is connected */}
+      {connected && Array.from(players.values()).map(player => {
+        if (player.sessionId === sessionId) return null; // Skip own player
+        return <RemotePlayer key={player.sessionId} player={player} />;
+      })}
     </>
   );
 };

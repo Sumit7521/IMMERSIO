@@ -1,25 +1,45 @@
-import React, { useRef, useEffect } from "react";
-import { Vector3 } from "three";
-import Avatar from "./Avatar";
+// components/Player/RemotePlayer.js
+import React, { useRef, useEffect } from 'react';
+import { useFrame } from '@react-three/fiber';
+import Avatar from './Avatar';
+import { Vector3 } from 'three';
 
-export default function RemotePlayer({ player }) {
-  const group = useRef();
-  const targetPos = new Vector3();
+const RemotePlayer = ({ player }) => {
+  const groupRef = useRef();
+  const targetPosition = useRef(new Vector3());
+  const targetRotation = useRef(0);
 
   useEffect(() => {
-    const id = setInterval(() => {
-      if (!group.current) return;
-      targetPos.set(player.x, player.y, player.z);
-      group.current.position.lerp(targetPos, 0.2);
-      group.current.rotation.y += (player.rotY - group.current.rotation.y) * 0.2;
-    }, 50);
+    if (player) {
+      targetPosition.current.set(player.x, player.y, player.z);
+      targetRotation.current = player.rotationY;
+    }
+  }, [player.x, player.y, player.z, player.rotationY]);
 
-    return () => clearInterval(id);
-  }, [player]);
+  useFrame((state, delta) => {
+    if (!groupRef.current) return;
+
+    // Smooth interpolation for position
+    const currentPos = groupRef.current.position;
+    currentPos.lerp(targetPosition.current, delta * 10);
+
+    // Smooth interpolation for rotation
+    const currentRot = groupRef.current.rotation.y;
+    const rotDiff = targetRotation.current - currentRot;
+    const shortestAngle = ((rotDiff % (Math.PI * 2)) + (Math.PI * 3)) % (Math.PI * 2) - Math.PI;
+    groupRef.current.rotation.y += shortestAngle * delta * 10;
+  });
 
   return (
-    <group ref={group}>
-      <Avatar scale={1} currentAction={player.anim} />
+    <group ref={groupRef}>
+      <Avatar scale={1} currentAction={player.animation} />
+      {/* Optional: Add username display above player */}
+      <mesh position={[0, 3, 0]}>
+        <planeGeometry args={[2, 0.5]} />
+        <meshBasicMaterial color="white" transparent opacity={0.8} />
+      </mesh>
     </group>
   );
-}
+};
+
+export default RemotePlayer;

@@ -9,4 +9,5 @@ router.post('/save', authMiddleware, createavatar);
 // GET /api/avatar/get-avatar
 router.get('/get-avatar', authMiddleware, getavatar);
 
+
 module.exports = router;
