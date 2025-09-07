@@ -27,10 +27,10 @@ const getTimePeriod = () => {
   
   if (hour >= 5 && hour < 7) return 'dawn';
   if (hour >= 7 && hour < 11) return 'morning'; 
-  if (hour >= 11 && hour < 14) return 'noon';
+  if (hour >= 11 && hour < 14) return 'night';
   if (hour >= 14 && hour < 18) return 'afternoon';
   if (hour >= 18 && hour < 20) return 'evening';
-  return 'evening'; // 20-5
+  return 'night'; // 20-5
 };
 
 // Get light intensity based on time
@@ -39,7 +39,7 @@ const getLightIntensity = (timePeriod) => {
     dawn: 0.3,
     morning: 0.8,
     noon: 1.0,
-    afternoon: 0.7,
+    afternoon: 0.1,
     evening: 0.1,
     night: 0.1,
   };

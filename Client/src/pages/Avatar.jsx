@@ -28,7 +28,7 @@ const Avatar = () => {
   };
 
   return (
-    <div className="w-full h-screen bg-gradient-to-b from-gray-900 to-gray-700 flex flex-col items-center justify-center p-4">
+    <div className="w-full h-screen bg-gradient-to-b from-gray-900 to-gray-700 flex flex-col items-center justify-center">
       <div className="w-full h-full">
         <AvatarCreator onAvatarExported={handleAvatarExported} />
       </div>

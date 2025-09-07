@@ -5,6 +5,7 @@ import { KeyboardControls } from "@react-three/drei";
 import CityScene from "../components/world/CityScene";
 import { CharacterController } from "../components/Player/CharacterController";
 import { DynamicSky } from "../components/world/DynamicSky"; // Ensure path is correct
+import { Rain } from "../components/world/Rain";
 
 export default function Metaverse({ userId }) {
   const [isPointerLocked, setIsPointerLocked] = useState(false);
@@ -75,6 +76,7 @@ export default function Metaverse({ userId }) {
         >
           {/* Dynamic sky, lighting, and fog */}
           <DynamicSky useCustomHDRI={true} />
+          {/* <Rain count={18000} /> */}
 
           <Physics gravity={[0, -9.81, 0]}>
             <CityScene />
