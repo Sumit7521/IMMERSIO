@@ -38,10 +38,10 @@ const RemotePlayer = ({ player }) => {
       />
 
       {/* Optional: Add username display above player */}
-      <mesh position={[0, 3, 0]}>
+      {/* <mesh position={[0, 3, 0]}>
         <planeGeometry args={[2, 0.5]} />
         <meshBasicMaterial color="white" transparent opacity={0.8} />
-      </mesh>
+      </mesh> */}
     </group>
   );
 };
