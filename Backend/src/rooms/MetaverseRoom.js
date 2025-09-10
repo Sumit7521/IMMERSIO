@@ -61,8 +61,6 @@ class MetaverseRoom extends Room {
             player.avatarUrl = message.avatarUrl
           }
           player.lastUpdate = Date.now()
-
-          // console.log(`Player ${player.userId} moved. Avatar URL: ${player.avatarUrl}`)
         }
       } catch (error) {
         console.error("❌ Error handling move message:", error)
@@ -83,13 +81,10 @@ class MetaverseRoom extends Room {
       const player = new Player()
       player.userId = options.userId || client.sessionId
       player.avatarId = options.avatarId || ''
-      // 🚨 fix: ignore "default"
       player.avatarUrl = (options.avatarUrl && options.avatarUrl !== "default")
         ? options.avatarUrl
         : ''
       player.lastUpdate = Date.now()
-
-      console.log(`Player avatarUrl on join: ${player.avatarUrl}`)
 
       const spawnRadius = 5
       const angle = Math.random() * Math.PI * 2
@@ -128,8 +123,9 @@ class MetaverseRoom extends Room {
     }
   }
 
+  // 🔹 Removed automatic disposal logics
   onDispose() {
-    console.log("🏠 MetaverseRoom disposed")
+    console.log("🏠 MetaverseRoom disposed (manual cleanup only)")
   }
 
   isValidPosition(message) {
@@ -147,7 +143,7 @@ class MetaverseRoom extends Room {
 
   checkInactivePlayers() {
     const now = Date.now()
-    const timeout = 30000
+    const timeout = 120000 // ⏰ 2 minutes instead of 30s
     this.state.players.forEach((player, sessionId) => {
       if (now - player.lastUpdate > timeout) {
         console.log(`⏰ Removing inactive player ${sessionId}`)

@@ -3,27 +3,24 @@ import { useState, useEffect, useRef } from 'react';
 import { Client } from 'colyseus.js';
 
 export const useMultiplayer = (userId, avatarUrl) => {
-  const [room, setRoom] = useState(null);
   const [players, setPlayers] = useState(new Map());
   const [connected, setConnected] = useState(false);
+  const roomRef = useRef(null);
   const clientRef = useRef(null);
   const lastSentData = useRef({});
 
   useEffect(() => {
+    let isMounted = true;
+
     const connect = async () => {
       try {
         const client = new Client('wss://immersio-rwyc.onrender.com');
         clientRef.current = client;
 
         const room = await client.joinOrCreate('metaverse_room', { userId, avatarUrl });
-        setRoom(room);
+        roomRef.current = room;
+        if (!isMounted) return;
         setConnected(true);
-
-        // Wait for room to be ready
-        await new Promise((resolve) => {
-          if (room.state) resolve();
-          else room.onStateChange.once(() => resolve());
-        });
 
         // Listen for state changes
         room.onStateChange((state) => {
@@ -43,26 +40,31 @@ export const useMultiplayer = (userId, avatarUrl) => {
             });
           }
           setPlayers(playersMap);
-
-          // console.log("📥 Received state from server:", Array.from(playersMap.values()));
         });
+
+        // Optional: handle leave/disconnect events
+        room.onLeave(() => {
+          if (isMounted) setConnected(false);
+        });
+
       } catch (error) {
-        console.log(error)
-        setConnected(false);
+        console.error("❌ Multiplayer connection error:", error);
+        if (isMounted) setConnected(false);
       }
     };
 
     connect();
 
     return () => {
-      if (room) {
-        room.leave();
-        setConnected(false);
-      }
+      isMounted = false;
+      const room = roomRef.current;
+      if (room && room.leave) room.leave();
+      setConnected(false);
     };
-  }, [userId, avatarUrl ,room]);
+  }, [userId, avatarUrl]); // ✅ room removed from deps
 
   const sendPlayerUpdate = (x, y, z, rotationY, animation, avatarUrlToSend = avatarUrl) => {
+    const room = roomRef.current;
     if (!room || !connected) return;
 
     const data = { x, y, z, rotationY, animation, avatarUrl: avatarUrlToSend };
@@ -77,19 +79,16 @@ export const useMultiplayer = (userId, avatarUrl) => {
       data.avatarUrl !== lastData.avatarUrl;
 
     if (hasChanged) {
-      // ✅ Only keep this debug log
-      // console.log("📤 Sending player update:", data);
-
       room.send("move", data);
       lastSentData.current = data;
     }
   };
 
   return {
-    room,
+    room: roomRef.current,
     players,
     connected,
     sendPlayerUpdate,
-    sessionId: room?.sessionId
+    sessionId: roomRef.current?.sessionId
   };
 };
