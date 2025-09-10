@@ -9,7 +9,7 @@ const app = express()
 
 // CORS configuration for both HTTP and WebSocket
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000'], // Add both frontend and monitor
+  origin: ['https://immersiometaverse.vercel.app','http://localhost:5173'], // Add both frontend and monitor
   methods: ['GET','POST','PUT','DELETE'],
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization', 'x-ws-protocol']

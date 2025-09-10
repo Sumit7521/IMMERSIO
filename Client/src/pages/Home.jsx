@@ -78,7 +78,7 @@ const Home = () => {
         {/* Logo */}
         <div className="flex items-center">
           <img
-            src="./image/Immersio.png"
+            src="./images/immersio_logo.png"
             alt="Immersio Logo"
             className="h-12 w-auto drop-shadow-lg"
           />

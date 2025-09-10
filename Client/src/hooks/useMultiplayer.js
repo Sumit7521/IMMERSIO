@@ -12,7 +12,7 @@ export const useMultiplayer = (userId, avatarUrl) => {
   useEffect(() => {
     const connect = async () => {
       try {
-        const client = new Client('ws://localhost:3000');
+        const client = new Client('wss://immersio-rwyc.onrender.com');
         clientRef.current = client;
 
         const room = await client.joinOrCreate('metaverse_room', { userId, avatarUrl });
@@ -44,7 +44,7 @@ export const useMultiplayer = (userId, avatarUrl) => {
           }
           setPlayers(playersMap);
 
-          console.log("📥 Received state from server:", Array.from(playersMap.values()));
+          // console.log("📥 Received state from server:", Array.from(playersMap.values()));
         });
       } catch (error) {
         console.log(error)
@@ -78,7 +78,7 @@ export const useMultiplayer = (userId, avatarUrl) => {
 
     if (hasChanged) {
       // ✅ Only keep this debug log
-      console.log("📤 Sending player update:", data);
+      // console.log("📤 Sending player update:", data);
 
       room.send("move", data);
       lastSentData.current = data;
