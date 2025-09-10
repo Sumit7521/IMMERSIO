@@ -2,7 +2,7 @@
 import axios from "axios"
 
 const api = axios.create({
-  baseURL: "http://localhost:3000/api", // change to your backend URL
+  baseURL: "https://immersio-rwyc.onrender.com/api", // change to your backend URL
   withCredentials: true, // 👈 send cookies with requests
   headers: {
     "Content-Type": "application/json",

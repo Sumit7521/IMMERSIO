@@ -30,6 +30,7 @@ export const CharacterController = ({ userId = "guest" }) => {
 
   const { avatarUrl } = useAvatar();
   const [multiplayerReady, setMultiplayerReady] = useState(false);
+  console.log(multiplayerReady)
 
   const { players, connected, sendPlayerUpdate, sessionId } = useMultiplayer(
     userId,

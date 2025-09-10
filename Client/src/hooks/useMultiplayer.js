@@ -60,7 +60,7 @@ export const useMultiplayer = (userId, avatarUrl) => {
         setConnected(false);
       }
     };
-  }, [userId, avatarUrl]);
+  }, [userId, avatarUrl ,room]);
 
   const sendPlayerUpdate = (x, y, z, rotationY, animation, avatarUrlToSend = avatarUrl) => {
     if (!room || !connected) return;
