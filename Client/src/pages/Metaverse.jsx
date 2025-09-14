@@ -1,41 +1,58 @@
-// Metaverse.js (Updated)
+// src/pages/Metaverse.jsx
 import React, { useState, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Physics } from "@react-three/rapier";
-import { KeyboardControls } from "@react-three/drei";
+import { KeyboardControls, useGLTF } from "@react-three/drei";
 import CityScene from "../components/world/CityScene";
 import { CharacterController } from "../components/Player/CharacterController";
 import { DynamicSky } from "../components/world/DynamicSky";
-// import { Rain } from "../components/world/Rain"; // Commented out as in your original
+// import { Rain } from "../components/world/Rain";
+import GameLoader from "../components/ui/GameLoader";
+import { useAvatar } from "../contexts/AvatarContext";
 
 export default function Metaverse({ userId }) {
   const [isPointerLocked, setIsPointerLocked] = useState(false);
+  const [ready, setReady] = useState(false);
+  const { avatarUrl } = useAvatar();
 
+  // Preload avatar + common animations
+  useEffect(() => {
+    if (!avatarUrl) return;
+
+    // Preload the main avatar
+    useGLTF.preload(avatarUrl);
+
+    // Optional: preload default animations if you have separate files
+    const animations = ["idle.glb", "walk.glb", "run.glb", "jump.glb"];
+    animations.forEach((file) => useGLTF.preload(`/animations/${file}`));
+
+    // Small delay to prevent first-frame GPU crash
+    const timeout = setTimeout(() => setReady(true), 200);
+    return () => clearTimeout(timeout);
+  }, [avatarUrl]);
+
+  // Pointer lock + keyboard prevent default
   useEffect(() => {
     const handlePointerLockChange = () => {
       setIsPointerLocked(document.pointerLockElement !== null);
     };
 
-    const handleKeyDown = (event) => {
-      if (['w', 'a', 's', 'd', 'W', 'A', 'S', 'D'].includes(event.key) || event.code === 'Space') {
-        event.preventDefault();
+    const handleKeyDown = (e) => {
+      if (["w","a","s","d","W","A","S","D"].includes(e.key) || e.code === "Space") {
+        e.preventDefault();
       }
     };
 
-    const handleKeyUp = (event) => {
-      if (['w', 'a', 's', 'd', 'W', 'A', 'S', 'D'].includes(event.key) || event.code === 'Space') {
-        event.preventDefault();
-      }
-    };
+    const handleKeyUp = handleKeyDown;
 
-    document.addEventListener('pointerlockchange', handlePointerLockChange);
-    document.addEventListener('keydown', handleKeyDown, true);
-    document.addEventListener('keyup', handleKeyUp, true);
+    document.addEventListener("pointerlockchange", handlePointerLockChange);
+    document.addEventListener("keydown", handleKeyDown, true);
+    document.addEventListener("keyup", handleKeyUp, true);
 
     return () => {
-      document.removeEventListener('pointerlockchange', handlePointerLockChange);
-      document.removeEventListener('keydown', handleKeyDown, true);
-      document.removeEventListener('keyup', handleKeyUp, true);
+      document.removeEventListener("pointerlockchange", handlePointerLockChange);
+      document.removeEventListener("keydown", handleKeyDown, true);
+      document.removeEventListener("keyup", handleKeyUp, true);
     };
   }, []);
 
@@ -50,23 +67,22 @@ export default function Metaverse({ userId }) {
 
   return (
     <div style={{ width: "100vw", height: "100vh", position: "relative" }}>
-      {/* Instructions overlay */}
-      {!isPointerLocked && (
+      {!ready && <GameLoader />}
+
+      {!isPointerLocked && ready && (
         <div style={{
-          position: 'absolute',
-          top: '20px',
-          left: '20px',
-          color: 'white',
-          background: 'rgba(0,0,0,0.7)',
-          padding: '10px',
-          borderRadius: '5px',
-          fontSize: '14px',
-          zIndex: 1000
+          position: "absolute",
+          top: "20px",
+          left: "20px",
+          color: "white",
+          background: "rgba(0,0,0,0.7)",
+          padding: "10px",
+          borderRadius: "5px",
+          fontSize: "14px",
+          zIndex: 1000,
         }}>
-          Click to enable mouse look
-          <br />
-          WASD: Move | Shift: Run | Space: Jump | ESC: Release mouse
-          <br />
+          Click to enable mouse look<br/>
+          WASD: Move | Shift: Run | Space: Jump | ESC: Release mouse<br/>
           🌐 Multiplayer Ready
         </div>
       )}
@@ -77,13 +93,14 @@ export default function Metaverse({ userId }) {
           camera={{ position: [0, 10, 20], fov: 30 }}
           onCreated={(state) => { state.gl.domElement.tabIndex = 1; }}
         >
-          {/* Dynamic sky, lighting, and fog */}
           <DynamicSky useCustomHDRI={true} />
           {/* <Rain count={18000} /> */}
 
           <Physics gravity={[0, -9.81, 0]}>
             <CityScene />
-            <CharacterController userId={userId} />
+            {avatarUrl && (
+              <CharacterController userId={userId} onReady={() => setReady(true)} />
+            )}
           </Physics>
         </Canvas>
       </KeyboardControls>
