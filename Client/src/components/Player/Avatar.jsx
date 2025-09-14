@@ -106,14 +106,8 @@ export default function Avatar({ avatarUrl: propUrl, currentAction = "idle", sca
     }
   }, [actions, currentAction]);
 
-  if (isLoading) return (
-    <mesh>
-      <boxGeometry args={[1, 2, 1]} />
-      <meshStandardMaterial color="gray" wireframe />
-    </mesh>
-  );
-
-  if (!avatarScene) return null;
+  // Return null while loading
+  if (isLoading || !avatarScene) return null;
 
   return (
     <group ref={groupRef}>
