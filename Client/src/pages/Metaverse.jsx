@@ -7,7 +7,7 @@ import CityScene from "../components/world/CityScene";
 import { CharacterController } from "../components/Player/CharacterController";
 import { DynamicSky } from "../components/world/DynamicSky";
 // import { Rain } from "../components/world/Rain";
-import GameLoader from "../components/ui/GameLoader";
+import GameLoader from "../components/ui/GameLoader.jsx";
 import { useAvatar } from "../contexts/AvatarContext";
 
 export default function Metaverse({ userId }) {
