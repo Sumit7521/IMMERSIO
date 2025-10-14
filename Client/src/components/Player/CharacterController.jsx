@@ -1,5 +1,6 @@
 // components/Player/CharacterController.js
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect } from "react";
+import { useFrame } from "@react-three/fiber";
 import { RigidBody, CapsuleCollider } from "@react-three/rapier";
 import Avatar from "./Avatar";
 import RemotePlayer from "./RemotePlayer";
@@ -13,6 +14,8 @@ import { useMultiplayer } from "../../hooks/useMultiplayer";
 import { useMovement } from "../../hooks/useMovement";
 import { useCameraFollow } from "../../hooks/useCameraFollow";
 import { useMultiplayerSync } from "../../hooks/useMultiplayerSync";
+
+import LocationPopup from "./LocationPopup"; 
 
 export const CharacterController = ({ userId = "guest" }) => {
   const settings = useControls("Character", {
@@ -29,26 +32,48 @@ export const CharacterController = ({ userId = "guest" }) => {
   const [, getKeys] = useKeyboardControls();
 
   const { avatarUrl } = useAvatar();
-  const [multiplayerReady, setMultiplayerReady] = useState(false);
-  // console.log(multiplayerReady)
+  const [multiplayerReady, setMultiplayerReady] = React.useState(false);
 
   const { players, connected, sendPlayerUpdate, sessionId } = useMultiplayer(
     userId,
     avatarUrl || "default"
   );
 
+  const lastPosition = useRef({ x: 0, y: 0, z: 0 });
+
+  // Trigger position for popup
+  const triggerPos = { x: 100.15, y: -3.3, z: -5.35 };
+  const triggerDistance = 5; // distance threshold
+
   useEffect(() => {
     if (avatarUrl) setMultiplayerReady(true);
   }, [avatarUrl]);
 
-  // ✅ Movement
   const { animation } = useMovement(rb, character, getKeys, settings);
-
-  // ✅ Camera follow
   useCameraFollow(character, settings);
-
-  // ✅ Multiplayer sync
   useMultiplayerSync(rb, character, animation, avatarUrl, sendPlayerUpdate, connected);
+
+  const [playerPos, setPlayerPos] = React.useState({ x: 0, y: 0, z: 0 });
+
+  useFrame(() => {
+    if (!rb.current) return;
+
+    const pos = rb.current.translation();
+
+    // --- log only when player moves ---
+    const moved =
+      pos.x !== lastPosition.current.x ||
+      pos.y !== lastPosition.current.y ||
+      pos.z !== lastPosition.current.z;
+
+    if (moved) {
+      console.log(
+        `Player moved to: x=${pos.x.toFixed(2)}, y=${pos.y.toFixed(2)}, z=${pos.z.toFixed(2)}`
+      );
+      lastPosition.current = { x: pos.x, y: pos.y, z: pos.z };
+      setPlayerPos({ x: pos.x, y: pos.y, z: pos.z }); // update position for popup
+    }
+  });
 
   return (
     <>
@@ -59,6 +84,13 @@ export const CharacterController = ({ userId = "guest" }) => {
       <group ref={character}>
         <Avatar scale={1} currentAction={animation} avatarUrl={avatarUrl} />
       </group>
+
+      {/* Popup */}
+      <LocationPopup
+        playerPos={playerPos}
+        triggerPos={triggerPos}
+        triggerDistance={triggerDistance}
+      />
 
       {/* Remote players */}
       {connected &&

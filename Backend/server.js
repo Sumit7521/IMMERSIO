@@ -12,26 +12,32 @@ import app from './src/app.js';
 // --- Database connection ---
 connectDB();
 
-// --- Create HTTP + WebSocket server ---
-const server = createServer(app);
-
-// --- Initialize Socket.IO (AI Classroom + Meet) ---
-initSocket(server);
-
-// --- Initialize Colyseus (Metaverse multiplayer) ---
+// --- Colyseus server (Metaverse multiplayer) ---
+const colyseusHttpServer = createServer(app);
 const gameServer = new ColyseusServer({
-  transport: new WebSocketTransport({ server }),
+  transport: new WebSocketTransport({ server: colyseusHttpServer }),
 });
 gameServer.define('metaverse_room', MetaverseRoom);
 
-// --- Colyseus monitor (for dev) ---
+// --- Colyseus monitor ---
 app.use('/colyseus', monitor());
 
-// --- Start server ---
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`🌐 Socket.IO ready for AI Classroom & Meetings`);
-  console.log(`🎮 Colyseus ready for Metaverse multiplayer`);
-  console.log(`📊 Monitor: http://localhost:${PORT}/colyseus`);
+// --- Socket.IO server (AI Classroom + Meet) ---
+const socketIOHttpServer = createServer(app);
+initSocket(socketIOHttpServer);
+
+// --- Ports ---
+const COLYSEUS_PORT = process.env.PORT || 3000;
+const SOCKET_IO_PORT = process.env.SOCKET_PORT || 3001;
+
+// --- Start Colyseus server ---
+colyseusHttpServer.listen(COLYSEUS_PORT, () => {
+  console.log(`🎮 Colyseus server running on port ${COLYSEUS_PORT}`);
+  console.log(`📊 Monitor: http://localhost:${COLYSEUS_PORT}/colyseus`);
+});
+
+// --- Start Socket.IO server ---
+socketIOHttpServer.listen(SOCKET_IO_PORT, () => {
+  console.log(`🌐 Socket.IO server running on port ${SOCKET_IO_PORT}`);
+  console.log(`🚀 Ready for AI Classroom & Meetings`);
 });

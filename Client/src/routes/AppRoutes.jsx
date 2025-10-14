@@ -11,6 +11,8 @@ import LoginUser from "../pages/LoginUser";
 import Avatar from "../pages/Avatar";
 import Dashboard from "../pages/Dashboard";
 import Metaverse from "../pages/Metaverse"
+import Virtualclassroom from "../pages/Virtualclassroom";
+import Aiclassroom from "../pages/Aiclassroom";
 
 const router = createBrowserRouter([
   {
@@ -36,6 +38,14 @@ const router = createBrowserRouter([
   {
     path: '/metaverse',
     element: <Metaverse />
+  },
+  {
+    path:'/virtual-classroom',
+    element : <Virtualclassroom />
+  },
+  {
+    path:'/ai-classroom',
+    element : <Aiclassroom />
   },
   {
     path: "*",
