@@ -14,7 +14,7 @@ const BACKEND_URL = (() => {
     return process.env.REACT_APP_BACKEND_URL;
   }
   if (typeof import.meta !== 'undefined' && import.meta.env?.MODE === 'production') {
-    return 'https://immersio-rwyc.onrender.com';
+    return 'https://immersio.onrender.com';
   }
   return 'http://localhost:3001';
 })();
@@ -25,7 +25,7 @@ const SOCKET_URL = (() => {
   }
   // In production, use deployed URL
   if (typeof import.meta !== 'undefined' && import.meta.env?.MODE === 'production') {
-    return 'https://immersio-rwyc.onrender.com';
+    return 'https://immersio.onrender.com';
   }
   // Default for local dev
   return 'http://localhost:3000';
