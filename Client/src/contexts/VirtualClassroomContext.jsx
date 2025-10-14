@@ -16,7 +16,7 @@ const BACKEND_URL = (() => {
   if (typeof import.meta !== 'undefined' && import.meta.env?.MODE === 'production') {
     return 'https://immersio.onrender.com';
   }
-  return 'http://localhost:3001';
+  return 'https://immersio.onrender.com';
 })();
 
 const SOCKET_URL = (() => {
