@@ -1,4 +1,3 @@
-// server.js
 import 'dotenv/config';
 import { createServer } from 'http';
 import { Server as ColyseusServer } from 'colyseus';
@@ -12,10 +11,13 @@ import app from './src/app.js';
 // --- Database connection ---
 connectDB();
 
+// --- Create a single HTTP server for both Colyseus and Socket.IO ---
+const PORT = process.env.PORT || 3000;
+const httpServer = createServer(app);
+
 // --- Colyseus server (Metaverse multiplayer) ---
-const colyseusHttpServer = createServer(app);
 const gameServer = new ColyseusServer({
-  transport: new WebSocketTransport({ server: colyseusHttpServer }),
+  transport: new WebSocketTransport({ server: httpServer }),
 });
 gameServer.define('metaverse_room', MetaverseRoom);
 
@@ -23,21 +25,12 @@ gameServer.define('metaverse_room', MetaverseRoom);
 app.use('/colyseus', monitor());
 
 // --- Socket.IO server (AI Classroom + Meet) ---
-const socketIOHttpServer = createServer(app);
-initSocket(socketIOHttpServer);
+initSocket(httpServer); // Attach Socket.IO to the same HTTP server
 
-// --- Ports ---
-const COLYSEUS_PORT = process.env.PORT || 3000;
-const SOCKET_IO_PORT = process.env.SOCKET_PORT || 3001;
-
-// --- Start Colyseus server ---
-colyseusHttpServer.listen(COLYSEUS_PORT, () => {
-  console.log(`🎮 Colyseus server running on port ${COLYSEUS_PORT}`);
-  console.log(`📊 Monitor: http://localhost:${COLYSEUS_PORT}/colyseus`);
-});
-
-// --- Start Socket.IO server ---
-socketIOHttpServer.listen(SOCKET_IO_PORT, () => {
-  console.log(`🌐 Socket.IO server running on port ${SOCKET_IO_PORT}`);
+// --- Start HTTP server ---
+httpServer.listen(PORT, () => {
+  console.log(`🎮 Colyseus server running`);
+  console.log(`🌐 Socket.IO server running`);
   console.log(`🚀 Ready for AI Classroom & Meetings`);
+  console.log(`📊 Colyseus Monitor available at /colyseus`);
 });

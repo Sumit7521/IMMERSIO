@@ -23,16 +23,14 @@ const SOCKET_URL = (() => {
   if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SOCKET_URL) {
     return import.meta.env.VITE_SOCKET_URL;
   }
-
-  // Convert https to wss, http to ws
-  if (BACKEND_URL.startsWith('https://')) {
-    return BACKEND_URL.replace(/^https:/, 'wss:');
+  // In production, use deployed URL
+  if (typeof import.meta !== 'undefined' && import.meta.env?.MODE === 'production') {
+    return 'https://immersio-rwyc.onrender.com';
   }
-  if (BACKEND_URL.startsWith('http://')) {
-    return BACKEND_URL.replace(/^http:/, 'ws:');
-  }
-  return BACKEND_URL;
+  // Default for local dev
+  return 'http://localhost:3000';
 })();
+
 
 const VirtualClassroomContext = createContext();
 
