@@ -1,9 +1,10 @@
-const User = require("../models/user.model");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
+// src/controllers/auth.controller.js
+import User from "../models/user.model.js";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
-//register
-const register = async (req, res) => {
+// Register
+export const register = async (req, res) => {
   try {
     const { username, email, fullname, password } = req.body;
 
@@ -18,7 +19,7 @@ const register = async (req, res) => {
       username,
       email,
       fullname,
-      password: hashedPassword, //Secret123
+      password: hashedPassword,
     });
 
     const token = jwt.sign(
@@ -30,7 +31,7 @@ const register = async (req, res) => {
     res.cookie("token", token, {
       httpOnly: true, 
       secure: true,
-      sameSite:"none", 
+      sameSite: "none", 
       maxAge: 60 * 60 * 1000, 
     });
 
@@ -49,8 +50,8 @@ const register = async (req, res) => {
   }
 };
 
-//login
-const login = async (req, res) => {
+// Login
+export const login = async (req, res) => {
   try {
     const { email, username, password } = req.body;
 
@@ -76,9 +77,9 @@ const login = async (req, res) => {
     res.cookie("token", token, {
       httpOnly: true,
       secure: true,
-      sameSite:"none",
+      sameSite: "none",
       maxAge: 60 * 60 * 1000,
-    })
+    });
 
     res.status(200).json({
       message: "Login successful",
@@ -95,21 +96,18 @@ const login = async (req, res) => {
   }
 };
 
-//logout
-function logout(req, res) {
-  const token = req.cookies.token
+// Logout
+export const logout = (req, res) => {
+  const token = req.cookies.token;
   if (!token) {
-    return res.status(400).json({ message: "No token found" })
+    return res.status(400).json({ message: "No token found" });
   }
 
   res.clearCookie("token", {
     httpOnly: true,
-    secure: true,     // use true in production with HTTPS
+    secure: true,     
     sameSite: "none"
-  })
+  });
 
-  return res.status(200).json({ message: "Logged out successfully" })
-}
-
-
-module.exports = { register, login , logout };
+  return res.status(200).json({ message: "Logged out successfully" });
+};

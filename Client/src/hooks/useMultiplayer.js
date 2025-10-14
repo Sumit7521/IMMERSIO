@@ -14,7 +14,7 @@ export const useMultiplayer = (userId, avatarUrl) => {
 
     const connect = async () => {
       try {
-        const client = new Client('wss://immersio-rwyc.onrender.com');
+        const client = new Client('ws://localhost:3000');
         clientRef.current = client;
 
         const room = await client.joinOrCreate('metaverse_room', { userId, avatarUrl });

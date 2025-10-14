@@ -2,6 +2,7 @@
   "name": "backend",
   "version": "1.0.0",
   "description": "",
+  "type": "module",
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -14,6 +15,7 @@
     "@colyseus/monitor": "^0.16.7",
     "@colyseus/schema": "^3.0.60",
     "@colyseus/ws-transport": "^0.16.5",
+    "@langchain/google-genai": "^0.2.18",
     "bcryptjs": "^3.0.2",
     "colyseus": "^0.16.4",
     "cookie-parser": "^1.4.7",
@@ -21,6 +23,8 @@
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.18.0"
+    "mongoose": "^8.18.0",
+    "node-fetch": "^3.3.2",
+    "socket.io": "^4.8.1"
   }
 }

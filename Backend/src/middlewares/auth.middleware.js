@@ -1,9 +1,10 @@
-const jwt = require("jsonwebtoken");
-const User = require("../models/user.model");
+// src/middlewares/auth.middleware.js
+import jwt from "jsonwebtoken";
+import User from "../models/user.model.js";
 
-const authMiddleware = async (req, res, next) => {
+export const authMiddleware = async (req, res, next) => {
   try {
-    const token = req.cookies.token
+    const token = req.cookies.token;
 
     if (!token) {
       return res.status(401).json({ message: "Not authenticated" });
@@ -23,7 +24,7 @@ const authMiddleware = async (req, res, next) => {
   }
 };
 
-const authorizeRoles = (...allowedRoles) => {
+export const authorizeRoles = (...allowedRoles) => {
   return (req, res, next) => {
     if (!req.user || !allowedRoles.includes(req.user.role)) {
       return res.status(403).json({ message: "Access denied" });
@@ -31,5 +32,3 @@ const authorizeRoles = (...allowedRoles) => {
     next();
   };
 };
-
-module.exports = { authMiddleware, authorizeRoles };

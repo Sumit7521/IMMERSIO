@@ -1,36 +1,37 @@
 // server.js
-const app = require('./src/app')
-const connectDB = require('./src/db/db')
-const { createServer } = require('http')
-const { Server } = require('colyseus')
-const { monitor } = require('@colyseus/monitor')
-const { WebSocketTransport } = require('@colyseus/ws-transport')
-const MetaverseRoom = require('./src/rooms/MetaverseRoom')
-require('dotenv').config()
+import 'dotenv/config';
+import { createServer } from 'http';
+import { Server as ColyseusServer } from 'colyseus';
+import { WebSocketTransport } from '@colyseus/ws-transport';
+import { monitor } from '@colyseus/monitor';
+import connectDB from './src/db/db.js';
+import MetaverseRoom from './src/rooms/MetaverseRoom.js';
+import { initSocket } from './src/sockets/socketInit.js';
+import app from './src/app.js';
 
-// Connect to database first
-connectDB()
+// --- Database connection ---
+connectDB();
 
-// Create HTTP server
-const server = createServer(app)
+// --- Create HTTP + WebSocket server ---
+const server = createServer(app);
 
-// Create Colyseus server
-const gameServer = new Server({
-  transport: new WebSocketTransport({
-    server: server
-  })
-})
+// --- Initialize Socket.IO (AI Classroom + Meet) ---
+initSocket(server);
 
-// Register room handlers
-gameServer.define('metaverse_room', MetaverseRoom)
+// --- Initialize Colyseus (Metaverse multiplayer) ---
+const gameServer = new ColyseusServer({
+  transport: new WebSocketTransport({ server }),
+});
+gameServer.define('metaverse_room', MetaverseRoom);
 
-// Optional: Monitor panel (for development)
-app.use('/colyseus', monitor())
+// --- Colyseus monitor (for dev) ---
+app.use('/colyseus', monitor());
 
-const PORT = process.env.PORT || 3000
-
+// --- Start server ---
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`🚀 Server is running on port ${PORT}`)
-  console.log(`📊 Colyseus monitor available at http://localhost:${PORT}/colyseus`)
-  console.log(`🌐 WebSocket server ready for multiplayer connections`)
-})
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🌐 Socket.IO ready for AI Classroom & Meetings`);
+  console.log(`🎮 Colyseus ready for Metaverse multiplayer`);
+  console.log(`📊 Monitor: http://localhost:${PORT}/colyseus`);
+});

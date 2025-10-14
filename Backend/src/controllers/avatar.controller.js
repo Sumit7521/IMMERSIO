@@ -1,6 +1,8 @@
-const Avatar = require('../models/avatar.model');
-const User = require('../models/user.model');
-async function createavatar(req, res) {
+// src/controllers/avatar.controller.js
+import Avatar from '../models/avatar.model.js';
+import User from '../models/user.model.js';
+
+export async function createavatar(req, res) {
   try {
     const { url, avatarData } = req.body;
 
@@ -28,7 +30,7 @@ async function createavatar(req, res) {
   }
 }
 
-async function getavatar(req, res) {
+export async function getavatar(req, res) {
   try {
     // Find the user
     const user = await User.findById(req.user._id).populate('avatars');
@@ -41,5 +43,3 @@ async function getavatar(req, res) {
     res.status(500).json({ message: 'Server error' });
   }
 }
-
-module.exports = {createavatar,getavatar}

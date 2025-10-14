@@ -1,51 +1,61 @@
 // src/app.js
-const cookieParser = require('cookie-parser');
-const express = require('express')
-const cors = require('cors')
-const authRoute = require('./routes/auth.route')
-const avatarRoute = require('./routes/avatar.route');
+import express from 'express';
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
+import aiRoutes from './routes/ai.js';
+import { router as meetRoutes } from './routes/meet.js';
+import authRoute from './routes/auth.route.js';
+import avatarRoute from './routes/avatar.route.js';
+import { corsOptions } from './config/corsConfig.js';
+import { errorHandler } from './middlewares/errorHandler.js';
 
-const app = express()
+const app = express();
 
-// CORS configuration for both HTTP and WebSocket
-app.use(cors({
-  origin: ['https://immersiometaverse.vercel.app','http://localhost:5173'], // Add both frontend and monitor
-  methods: ['GET','POST','PUT','DELETE'],
-  credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-ws-protocol']
-}));
+// --- Middleware ---
+app.use(cors(corsOptions));
+// ✅ Removed `app.options('*', ...)` as it crashes Express v5
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser());
+app.use(express.static('public'));
 
-app.use(express.json()); // parse JSON body
-app.use(cookieParser()); // for reading cookies
-
-// Routes
-app.use('/api/auth', authRoute)
+// --- Routes ---
+app.use('/api/auth', authRoute);
 app.use('/api/avatar', avatarRoute);
+app.use('/api', aiRoutes);
+app.use('/api/meet', meetRoutes);
 
-// Health check endpoint
+// --- Health check ---
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
+  res.json({
+    status: 'OK',
     timestamp: new Date().toISOString(),
-    services: {
-      http: 'running',
-      websocket: 'ready'
-    }
-  })
-})
+    services: { http: 'running', websocket: 'ready' },
+  });
+});
 
-// Basic route for testing
+// --- Root ---
 app.get('/', (req, res) => {
-  res.json({ 
-    message: 'Metaverse Backend API',
-    version: '1.0.0',
+  res.json({
+    message: 'Merged Metaverse + AI Classroom Backend',
+    version: '2.0.0',
     endpoints: {
       health: '/health',
       auth: '/api/auth',
       avatar: '/api/avatar',
-      monitor: '/colyseus'
-    }
-  })
-})
+      ai: '/api',
+      meet: '/api/meet',
+      monitor: '/colyseus',
+    },
+  });
+});
 
-module.exports = app
+// --- Error handling ---
+app.use(errorHandler);
+
+// ✅ 404 handler compatible with Express v5
+app.use((req, res) => {
+  res.status(404).json({ error: 'Endpoint not found' });
+});
+
+export default app;

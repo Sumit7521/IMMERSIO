@@ -1,4 +1,5 @@
-const mongoose = require("mongoose");
+// src/models/user.model.js
+import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema(
   {
@@ -23,25 +24,25 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["user", "manager", "admin"],
-      default: "user",
+      enum: ['user', 'manager', 'admin'],
+      default: 'user',
     },
     password: {
       type: String,
       required: true,
       minlength: 6,
-      select: false, // default queries me password return nahi hoga
+      select: false, // password won't be returned by default queries
     },
     avatars: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Avatar", // reference to Avatar model
+        ref: 'Avatar', // reference to Avatar model
       },
     ],
   },
   { timestamps: true }
 );
 
-const User = mongoose.model("User", userSchema);
+const User = mongoose.model('User', userSchema);
 
-module.exports = User;
+export default User;

@@ -2,11 +2,11 @@
 import React from "react"
 import { useGLTF } from "@react-three/drei"
 import { RigidBody } from "@react-three/rapier"
-import { DynamicSky } from './DynamicSky';
+
 
 export default function CityScene() {
   // Load the city model from public folder
-  const { scene } = useGLTF("/models/fullcity.glb")
+  const { scene } = useGLTF("/models/City.glb")
 
   return (
     <RigidBody type="fixed" colliders='trimesh'>

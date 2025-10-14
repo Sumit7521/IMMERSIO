@@ -1,7 +1,9 @@
-const express = require('express');
+// src/routes/avatar.route.js
+import express from 'express';
+import { authMiddleware } from '../middlewares/auth.middleware.js';
+import { createavatar, getavatar } from '../controllers/avatar.controller.js';
+
 const router = express.Router();
-const { authMiddleware } = require('../middlewares/auth.middleware');
-const { createavatar, getavatar } = require('../controllers/avatar.controller');
 
 // POST /api/avatar/save
 router.post('/save', authMiddleware, createavatar);
@@ -9,5 +11,5 @@ router.post('/save', authMiddleware, createavatar);
 // GET /api/avatar/get-avatar
 router.get('/get-avatar', authMiddleware, getavatar);
 
-
-module.exports = router;
+// ✅ Default export for ES module
+export default router;
